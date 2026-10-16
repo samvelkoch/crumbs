@@ -5,6 +5,7 @@ import {
 import {
   FOODS, SECTORS, FACTORS, FACTOR_BY_ID, BASIC, PLACES, PLACE_BY_ID, SWEET_DRINKS,
   foodLabel, foodEmoji, foodFamilies, parseFreeText, itemLabel, itemEmoji,
+  QTY_UNITS, QTY_SIZES, QTY_NUMS, DRINK_UNITS, qtyText, defaultUnit, cleanQty,
 } from './foods.js';
 import { analyze, evaluateCase, skinScore, ZONES, LEVELS, MAX_LEVEL, FLARE } from './radar.js';
 import { PLATE, WATER_GOAL, byDay, plateOf, waterOf, sweetOf, isSweet, stars, rankOf, BADGES, earnedBadges, streak } from './game.js';
@@ -15,6 +16,8 @@ import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { playCatch, playSort, playKitchen } from './games.js';
 import { playRobot } from './robotgame.js';
+import { playCipher, MESSAGES as CIPHER_MESSAGES } from './cipher.js';
+import { playLogic } from './logic.js';
 import { DEFAULT_ROBOT, MISSIONS as ROBOT_MISSIONS, robotSVG } from './robot.js';
 import { RECIPES, PRODUCTS, STALLS, LEVELS as KITCHEN_LEVELS, PLATE as DISH_PLATE } from './kitchen.js';
 import { VALUE_CARDS } from './values.js';
@@ -22,7 +25,7 @@ import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.j
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.10.0';
+const VERSION = '2.11.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -167,10 +170,30 @@ function dotsHTML(zones) {
   return `<span class="dots">${ZONES.map((z) => `<i class="dot lv${zones?.[z.id] ?? 0}" title="${z.label}: ${LEVELS[zones?.[z.id] ?? 0]}"></i>`).join('')}</span>`;
 }
 
+// «Яблоко (3 штуки)», количество необязательное
+const foodQ = (e, id) => foodLabel(id) + (e.qty?.[id] ? ` (${qtyText(e.qty[id])})` : '');
+
+// Выбор количества: размеры, числа, единицы. q: {s} | {n,u} | undefined
+function qtyPicker(q, id, units) {
+  const on = (k, v) => (k === 's' ? q?.s === v : k === 'n' ? !q?.s && q?.n === v : !q?.s && (q?.u || defaultUnit(id)) === v);
+  const b = (k, v, label) => `<button type="button" class="chip small" data-sa="q" data-k="${k}" data-v="${v}" aria-pressed="${on(k, v)}">${label}</button>`;
+  const list = units ? QTY_UNITS.filter((u) => units.includes(u.id)) : QTY_UNITS;
+  return `<div class="qty-pick">
+    <div class="chips">${QTY_SIZES.map((x) => b('s', x.id, x.label)).join('')}</div>
+    <div class="chips qty-nums">${QTY_NUMS.map((n) => b('n', n, n)).join('')}</div>
+    <div class="chips">${list.map((u) => b('u', u.id, `${u.e} ${u.f[0]}`)).join('')}</div></div>`;
+}
+function applyQty(q, id, btn) {
+  const { k, v } = btn.dataset;
+  if (k === 's') return q?.s === v ? undefined : { s: v };
+  if (k === 'n') return !q?.s && q?.n === +v ? undefined : { n: +v, u: (!q?.s && q?.u) || defaultUnit(id) };
+  return { n: (!q?.s && q?.n) || 1, u: v };
+}
+
 function entrySummary(e) {
   if (e.type === 'meal') {
     const k = MEAL_BY_ID[e.kind] || MEAL_KINDS[4];
-    const foods = e.foods.map(foodLabel).join(', ');
+    const foods = e.foods.map((id) => foodQ(e, id)).join(', ');
     const pl = e.place && e.place !== 'home' ? PLACE_BY_ID[e.place] : null;
     return { ico: e.foods[0] ? foodEmoji(e.foods[0]) : k.emoji, title: k.label + (pl ? ` · ${pl.emoji} ${pl.label}` : ''), desc: [foods, e.note].filter(Boolean).join(' · ') || 'Без продуктов' };
   }
@@ -181,7 +204,7 @@ function entrySummary(e) {
   if (e.type === 'factor') {
     return { ico: FACTOR_BY_ID[e.factors[0]]?.emoji || '🧴', title: 'Улика', desc: [e.factors.map((f) => FACTOR_BY_ID[f]?.label || f).join(', '), e.note].filter(Boolean).join(' · ') };
   }
-  if (isSweet(e)) return { ico: foodEmoji(e.foods?.[0] || 'soda'), title: 'Сладкий напиток', desc: (e.foods || []).map(foodLabel).join(', ') || 'Напиток' };
+  if (isSweet(e)) return { ico: foodEmoji(e.foods?.[0] || 'soda'), title: 'Сладкий напиток', desc: (e.foods || []).map((id) => foodQ(e, id)).join(', ') || 'Напиток' };
   return { ico: e.drink === 'plain' ? '🍵' : '💧', title: e.drink === 'plain' ? 'Напиток без сахара' : 'Вода', desc: `${e.n || 1} стакан` };
 }
 
@@ -536,6 +559,18 @@ function renderGames() {
     <div class="gc-btns"><button type="button" class="pill-btn" data-action="game-robot">🤖 К роботу</button></div>
   </section>
   <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico">✉️</span><div><h2>Шифровки</h2>
+      <p class="small muted">Медок и Пуся переписываются секретным шифром. Разгадай записку: по значкам, по сдвигу алфавита или по номерам букв.</p></div></div>
+    ${(() => { const k = new Set(state.games.filter((x) => x.g === 'cipher').map((x) => x.msg)); return k.size ? `<p class="small muted">Разгадано ${k.size} из ${CIPHER_MESSAGES.length} записок</p>` : ''; })()}
+    <div class="gc-btns"><button type="button" class="pill-btn" data-action="game-cipher">✉️ Открыть записку</button></div>
+  </section>
+  <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico">🔍</span><div><h2>Логика сыщика</h2>
+      <p class="small muted">Кто любит грушу, а кто ходит на шахматы? По уликам выясни, у кого какой фрукт, шарф и кружок. Три уровня: Стажёр, Сыщик, Детектив.</p></div></div>
+    ${(() => { const n = state.games.filter((x) => x.g === 'logic').length; return n ? `<p class="small muted">Раскрыто дел: ${n}</p>` : ''; })()}
+    <div class="gc-btns"><button type="button" class="pill-btn" data-action="game-logic">🔍 Новое дело</button></div>
+  </section>
+  <section class="card game-card">
     <div class="gc-top"><span class="gc-ico">🃏</span><div><h2>Что для меня важно</h2>
       <p class="small muted">Пуся показывает карточки: семья, друзья, приключения, быть лучшей и много другого. Раскладываешь их по колодам, как чувствуешь. Правильных ответов нет.</p></div></div>
     ${state.sorts.length ? `<p class="small muted">Разложено ${state.sorts.length} ${plural(state.sorts.length, 'раз', 'раза', 'раз')}, последний раз ${shortDay(dayKey(state.sorts[state.sorts.length - 1].ts))}</p>` : ''}
@@ -575,6 +610,26 @@ function startRobot() {
     best,
     hero: heroFor,
     onRobot: (r) => { state.profile.robot = r; save(state); },
+    onFinish: (r) => { state.games.push({ id: uid(), ts: Date.now(), ...r }); commit(); },
+  });
+}
+
+function startCipher() {
+  playCipher({
+    hero: heroFor,
+    level: state.profile.cipherLevel || 1,
+    onLevel: (l) => { state.profile.cipherLevel = l; save(state); },
+    done: [...new Set(state.games.filter((x) => x.g === 'cipher').map((x) => x.msg))],
+    onFinish: (r) => { state.games.push({ id: uid(), ts: Date.now(), ...r }); commit(); },
+  });
+}
+
+function startLogic() {
+  playLogic({
+    hero: heroFor,
+    level: state.profile.logicLevel || 1,
+    solved: state.games.filter((x) => x.g === 'logic').length,
+    onLevel: (l) => { state.profile.logicLevel = l; save(state); },
     onFinish: (r) => { state.games.push({ id: uid(), ts: Date.now(), ...r }); commit(); },
   });
 }
@@ -770,14 +825,16 @@ function afterSave(e, isNew, kind) {
 // --- еда
 function mealSheet(existing) {
   const ts0 = existing?.ts ?? defaultTs();
-  const st = { kind: existing?.kind || kindByTime(ts0), place: existing?.place || 'home', foods: [...(existing?.foods || [])] };
+  const st = { kind: existing?.kind || kindByTime(ts0), place: existing?.place || 'home', foods: [...(existing?.foods || [])], qty: { ...(existing?.qty || {}) }, qOpen: null };
   const freq = frequentFoods();
   const sectorOrder = ['dish', 'veg', 'prot', 'carb', 'fruit', 'treat', 'drink'];
   const chip = (id) => `<button type="button" class="chip" data-sa="food" data-id="${esc(id)}" aria-pressed="${st.foods.includes(id)}">${foodEmoji(id)} ${esc(foodLabel(id))}</button>`;
   const cats = sectorOrder.map((s) => `<div><div class="cat-title"><i style="background:${SECTORS[s].color}"></i>${SECTORS[s].label}</div>
     <div class="chips">${FOODS.filter((f) => f.sector === s).map((f) => chip(f.id)).join('')}</div></div>`).join('');
   const tray = () => (st.foods.length
-    ? `<div class="chips">${st.foods.map((id) => `<button type="button" class="chip small" data-sa="unfood" data-id="${esc(id)}">${foodEmoji(id)} ${esc(foodLabel(id))} <span class="x">×</span></button>`).join('')}</div>`
+    ? `<div class="chips">${st.foods.map((id) => `<span class="tray-item ${st.qOpen === id ? 'open' : ''}"><button type="button" class="chip small" data-sa="qopen" data-id="${esc(id)}" aria-expanded="${st.qOpen === id}">${foodEmoji(id)} ${esc(foodLabel(id))} <span class="qty ${st.qty[id] ? '' : 'none'}">${st.qty[id] ? esc(qtyText(st.qty[id])) : 'сколько?'}</span></button><button type="button" class="chip small x-btn" data-sa="unfood" data-id="${esc(id)}" aria-label="Убрать ${esc(foodLabel(id))}">×</button></span>`).join('')}</div>
+      ${st.qOpen && st.foods.includes(st.qOpen) ? `<div class="qty-box"><div class="small"><b>${foodEmoji(st.qOpen)} ${esc(foodLabel(st.qOpen))}: сколько?</b> <span class="muted">Можно не указывать.</span></div>${qtyPicker(st.qty[st.qOpen], st.qOpen)}
+        <div class="qty-foot">${st.qty[st.qOpen] ? '<button type="button" class="pill-btn ghost" data-sa="qclear">Без количества</button>' : ''}<button type="button" class="pill-btn soft" data-sa="qdone">Готово</button></div></div>` : '<div class="small muted tray-hint">Нажми на продукт, чтобы указать сколько. Это необязательно.</div>'}`
     : '<div class="placeholder">Выбери продукты ниже или напиши блюдо словами</div>');
   const sync = () => {
     $('#tray').innerHTML = tray();
@@ -816,7 +873,11 @@ function mealSheet(existing) {
       kind: (b) => { st.kind = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="kind"]')) x.setAttribute('aria-pressed', x === b); },
       place: (b) => { st.place = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="place"]')) x.setAttribute('aria-pressed', x === b); },
       food: (b) => { const id = b.dataset.id; st.foods = st.foods.includes(id) ? st.foods.filter((x) => x !== id) : [...st.foods, id]; sync(); },
-      unfood: (b) => { st.foods = st.foods.filter((x) => x !== b.dataset.id); sync(); },
+      unfood: (b) => { st.foods = st.foods.filter((x) => x !== b.dataset.id); delete st.qty[b.dataset.id]; if (st.qOpen === b.dataset.id) st.qOpen = null; sync(); },
+      qopen: (b) => { st.qOpen = st.qOpen === b.dataset.id ? null : b.dataset.id; sync(); },
+      q: (b) => { const id = st.qOpen; if (!id) return; const q = applyQty(st.qty[id], id, b); if (q) st.qty[id] = q; else delete st.qty[id]; sync(); },
+      qclear: () => { delete st.qty[st.qOpen]; sync(); },
+      qdone: () => { st.qOpen = null; sync(); },
       parsed: (b) => { addFoods(st.parsed[+b.dataset.i].foods); b.remove(); if (!$('#suggest [data-sa="parsed"]')) { $('#fText').value = ''; suggest(); } },
       'parsed-all': () => { for (const p of st.parsed) addFoods(p.foods); $('#fText').value = ''; suggest(); },
       delete: () => afterDelete(remove(existing.id)),
@@ -824,7 +885,8 @@ function mealSheet(existing) {
         const pending = $('#fText').value.trim();
         if (pending) for (const p of parseFreeText(pending)) addFoods(p.foods);
         if (!st.foods.length) { toast('Добавь хотя бы один продукт'); return; }
-        const e = { ...(existing || { id: uid(), type: 'meal' }), kind: st.kind, place: st.place, foods: st.foods, ts: readTime(ts0), note: $('#fNote').value.trim().slice(0, 300) };
+        const e = { ...(existing || { id: uid(), type: 'meal' }), kind: st.kind, place: st.place, foods: st.foods, qty: cleanQty(st.qty, st.foods), ts: readTime(ts0), note: $('#fNote').value.trim().slice(0, 300) };
+        if (!e.qty) delete e.qty;
         delete e.demo;
         upsert(e);
         afterSave(e, !existing, 'meal');
@@ -980,18 +1042,23 @@ function reactionsSheet() {
 function sweetSheet(existing) {
   const ts0 = existing?.ts ?? defaultTs();
   let sel = existing?.foods?.[0] || null;
+  let q = existing?.qty?.[sel];
+  const qBox = () => `<div class="field"><label>Сколько? <span class="muted">Можно не указывать</span></label>${qtyPicker(q, sel || 'soda', DRINK_UNITS)}</div>`;
   openSheet({
     title: existing ? 'Изменить напиток' : 'Какой сладкий напиток?',
     body: `<p class="small muted">Это не идёт в стаканы дня, но помогает Радару: в сладких напитках бывают красители и цитрус.</p>
       <div class="chips">${SWEET_DRINKS.map((id) => `<button type="button" class="chip" data-sa="d" data-id="${id}" aria-pressed="${sel === id}">${foodEmoji(id)} ${esc(id === 'tea' ? 'Сладкий чай' : id === 'compote' ? 'Сладкий компот, морс' : foodLabel(id))}</button>`).join('')}</div>
+      <div id="qBox">${qBox()}</div>
       ${timeField(ts0)}`,
     foot: `${deleteBtn(existing)}<button type="button" class="pill-btn" data-sa="save">Записать</button>`,
     actions: {
       d: (b) => { sel = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="d"]')) x.setAttribute('aria-pressed', x === b); },
+      q: (b) => { q = applyQty(q, sel || 'soda', b); $('#qBox').innerHTML = qBox(); },
       delete: () => afterDelete(remove(existing.id)),
       save: () => {
         if (!sel) { toast('Выбери напиток'); return; }
-        const e = { ...(existing || { id: uid(), type: 'water', drink: 'sweet', n: 1 }), foods: [sel], ts: readTime(ts0) };
+        const e = { ...(existing || { id: uid(), type: 'water', drink: 'sweet', n: 1 }), foods: [sel], qty: cleanQty({ [sel]: q }, [sel]), ts: readTime(ts0) };
+        if (!e.qty) delete e.qty;
         delete e.demo;
         upsert(e);
         closeSheet();
@@ -1234,7 +1301,7 @@ function openReport(n) {
   for (let k = t; k >= from; k = addDays(k, -1)) {
     const l = days.get(k);
     if (!l) continue;
-    const meals = l.filter((e) => e.type === 'meal' || isSweet(e)).map((e) => `<b>${timeStr(e.ts)}</b> ${e.place && e.place !== 'home' ? `${esc(PLACE_BY_ID[e.place]?.label || '')}: ` : ''}${esc(e.foods.map(foodLabel).join(', '))}${e.note ? ` <i>(${esc(e.note)})</i>` : ''}`).join('<br>');
+    const meals = l.filter((e) => e.type === 'meal' || isSweet(e)).map((e) => `<b>${timeStr(e.ts)}</b> ${e.place && e.place !== 'home' ? `${esc(PLACE_BY_ID[e.place]?.label || '')}: ` : ''}${esc(e.foods.map((id) => foodQ(e, id)).join(', '))}${e.note ? ` <i>(${esc(e.note)})</i>` : ''}`).join('<br>');
     const factors = l.filter((e) => e.type === 'factor').map((e) => esc(e.factors.map((f) => FACTOR_BY_ID[f]?.label || f).join(', ') + (e.note ? ` (${e.note})` : ''))).join('<br>');
     const sk = l.filter((e) => e.type === 'skin');
     const mx = (z) => (sk.length ? Math.max(...sk.map((e) => e.zones[z] ?? 0)) : '');
@@ -1301,6 +1368,8 @@ const ACTIONS = {
   'game-sort': (b) => startSort(!!b.dataset.fresh),
   'game-kitchen': () => startKitchen(),
   'game-robot': () => startRobot(),
+  'game-cipher': () => startCipher(),
+  'game-logic': () => startLogic(),
   rate: (b) => {
     const id = b.dataset.id;
     const r = +b.dataset.r;

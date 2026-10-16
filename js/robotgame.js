@@ -1,9 +1,9 @@
 // Игра «Робот»: мастерская (собрать робота из деталей) и миссии, где робот буквально
 // выполняет программу. Команды привязаны к сторонам карты: ⬆ вверх, ➡ вправо и т. д.,
-// а план сразу рисуется на карте пунктиром. Логика и правила в robot.js.
+// плана на карте нет: ребёнок считает клетки в уме, на карте остаётся только след после запуска. Логика и правила в robot.js.
 
 import { esc, layer, closeLayer, reduced } from './games.js';
-import { PARTS, MISSIONS, DEFAULT_ROBOT, parseMission, initState, runCommand, isWin, simulate, solve, plannedPath, robotSVG, FLY_ENERGY } from './robot.js';
+import { PARTS, MISSIONS, DEFAULT_ROBOT, parseMission, initState, runCommand, isWin, simulate, solve, robotSVG, FLY_ENERGY } from './robot.js';
 
 const CELL = { '#': '🧱', '~': '🌊', '^': '🪨', '%': '', E: '🏁', C: '🥕', I: '📦', H: '🏠', B: '🔩' };
 const DIR = {
@@ -35,6 +35,7 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
   let sel = -1;
   let st = null;
   let running = false;
+  let trail = [];
   let stepping = null; // пошаговый запуск (антенна): итератор
   let hints = 0;
   let peekTm = 0;
@@ -100,7 +101,7 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
     if (!showMap) peek();
     mission();
   };
-  const resetRun = () => { st = initState(g, m, robot); running = false; stepping = null; };
+  const resetRun = () => { st = initState(g, m, robot); running = false; stepping = null; trail = []; };
   const peek = () => {
     showMap = true;
     clearTimeout(peekTm);
@@ -113,25 +114,11 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
     const near = (r, c) => Math.abs(r - st.r) + Math.abs(c - st.c) <= 1;
     const W = pos(g.w);
     const H = pos(g.h);
-    const plan = plannedPath(g, program);
     const P = (r, c) => `${(pos(c) + 0.5).toFixed(2)},${(pos(r) + 0.5).toFixed(2)}`;
-    // номера команд у точки, где команда начинается
-    let r0 = g.start[0];
-    let c0 = g.start[1];
-    const labels = [];
-    program.forEach((p, k) => {
-      if (p.c === 'A') { labels.push({ r: r0, c: c0, k, act: true }); return; }
-      labels.push({ r: r0, c: c0, k, d: p.d });
-      const sub = plannedPath({ ...g, start: [r0, c0] }, [p]).pts;
-      [r0, c0] = sub[sub.length - 1];
-    });
-    const overlay = `<svg class="rb-plan" viewBox="0 0 ${W.toFixed(2)} ${H.toFixed(2)}" aria-hidden="true">
-      <defs><marker id="rbarr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/></marker></defs>
-      ${plan.pts.length > 1 ? `<polyline points="${plan.pts.map(([r, c]) => P(r, c)).join(' ')}" fill="none" stroke="#7c3aed" stroke-width=".12" stroke-dasharray=".22 .14" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#rbarr)" opacity=".85"/>` : ''}
-    </svg><svg class="rb-plan top" viewBox="0 0 ${W.toFixed(2)} ${H.toFixed(2)}" aria-hidden="true">
-      ${labels.map((l) => `<g class="${l.k === sel ? 'sel' : ''}"><circle cx="${(pos(l.c) + (l.act ? 0.84 : 0.16)).toFixed(2)}" cy="${(pos(l.r) + 0.16).toFixed(2)}" r=".16" fill="${l.k === sel ? '#f59e0b' : '#7c3aed'}"/>
-        <text x="${(pos(l.c) + (l.act ? 0.84 : 0.16)).toFixed(2)}" y="${(pos(l.r) + 0.22).toFixed(2)}" font-size=".19" text-anchor="middle" fill="#fff" font-weight="800">${l.k + 1}</text></g>`).join('')}
-    </svg>`;
+    // план не рисуем: программу ребёнок держит в голове. Показываем только след уже проехавшего робота.
+    const overlay = trail.length > 1 ? `<svg class="rb-plan" viewBox="0 0 ${W.toFixed(2)} ${H.toFixed(2)}" aria-hidden="true">
+      <polyline points="${trail.map(([r, c]) => P(r, c)).join(' ')}" fill="none" stroke="#7c3aed" stroke-width=".1" stroke-dasharray=".05 .16" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/>
+    </svg>` : '';
     return `<div class="rb-map" style="--w:${g.w};--h:${g.h};--gap:${GAP}">
       ${g.cells.map((row, r) => row.map((ch, c) => {
         const ti = g.targets.findIndex((t) => t.r === r && t.c === c);
@@ -169,7 +156,7 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
       <div class="rb-play">
         <div class="rb-left">
           ${mapHTML(m.dark ? [] : [])}
-          <div class="rb-say" data-say>${esc(msg || (m.tip && !program.length ? `Совет: ${m.tip}` : program.length ? 'Пунктир показывает план. Нажми «Запустить», и робот поедет.' : 'Нажимай стрелки: куда ехать роботу по карте?'))} ${energy}</div>
+          <div class="rb-say" data-say>${esc(msg || (m.tip && !program.length ? `Совет: ${m.tip}` : program.length ? 'Посчитай клетки в уме и нажми «Запустить».' : 'Нажимай стрелки: куда ехать роботу по карте?'))} ${energy}</div>
         </div>
         <div class="rb-right">
           <div class="rb-prog" aria-label="Программа">${program.length ? program.map((p, k) => chipHTML(p, k, cur)).join('') : '<span class="small muted">Программа пустая. Каждое нажатие стрелки = шаг на одну клетку.</span>'}</div>
@@ -201,6 +188,7 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
   const showStep = (x, seen) => {
     st = x.s;
     if (x.ev === null) seen.push([st.r, st.c]);
+    trail = seen;
     mission(evText(x), x.k);
     el.querySelector('.rb-map')?.replaceWith(htmlNode(mapHTML(seen)));
     const bot = el.querySelector('.rb-bot');
