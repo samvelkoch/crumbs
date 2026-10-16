@@ -1,166 +1,238 @@
 // Игра «Робот»: мастерская (собрать робота из деталей) и миссии, где робот буквально
-// выполняет программу из команд. Логика и правила в robot.js, здесь только экран.
+// выполняет программу. Команды привязаны к сторонам карты: ⬆ вверх, ➡ вправо и т. д.,
+// а план сразу рисуется на карте пунктиром. Логика и правила в robot.js.
 
 import { esc, layer, closeLayer, reduced } from './games.js';
-import { PARTS, MISSIONS, parseMission, initState, runCommand, isWin, simulate, solve, robotSVG, FLY_ENERGY } from './robot.js';
+import { PARTS, MISSIONS, DEFAULT_ROBOT, parseMission, initState, runCommand, isWin, simulate, solve, plannedPath, robotSVG, FLY_ENERGY } from './robot.js';
 
-const CELL_EMOJI = { '#': '🧱', '~': '🌊', '^': '🪨', '%': '🟫', E: '🏁', C: '🥕', I: '📦', H: '🏠', B: '🔩' };
-const ARROW = { N: 0, E: 90, S: 180, W: 270 };
-const ACT_LABEL = { can: 'Полить', claw: 'Взять / отдать', basket: 'Взять / отдать', magnet: 'Собрать' };
+const CELL = { '#': '🧱', '~': '🌊', '^': '🪨', '%': '', E: '🏁', C: '🥕', I: '📦', H: '🏠', B: '🔩' };
+const DIR = {
+  N: { arrow: '⬆️', word: 'вверх' }, S: { arrow: '⬇️', word: 'вниз' }, W: { arrow: '⬅️', word: 'влево' }, E: { arrow: '➡️', word: 'вправо' },
+};
+const ACT = { can: ['💧', 'Полить'], claw: ['🦾', 'Взять / отдать'], basket: ['🧺', 'Взять / отдать'], magnet: ['🧲', 'Собрать'] };
 const EV_TEXT = {
   watered: '💦 Полито!', picked: '📦 Взял!', delivered: '🏠 Доставлено!', collected: '🔩 Есть!', nothing: '🤷 Здесь нечего делать',
-  full: 'Руки заняты, сначала отнеси посылку домой', stay: 'Впереди преграда, ехать некуда',
-  wall: 'Бам! Впереди стена.', water: 'Плюх! По воде может только летающий робот.', rock: 'Камень мешает. Ноги или пропеллер его прошли бы.',
+  full: 'Руки заняты: сначала отнеси посылку домой',
+  wall: 'Бам! Там стена.', water: 'Плюх! По воде может только робот с пропеллером.', rock: 'Камень! Его перешагнут ноги или перелетит пропеллер.',
   mud: 'Колёса застряли в грязи!', energy: 'Заряд кончился, робот приземлился.',
 };
 const STOP = new Set(['wall', 'water', 'rock', 'mud', 'energy']);
+const GAP = 0.07; // промежуток между клетками в долях клетки
 const part = (kind, id) => PARTS[kind].find((p) => p.id === id);
 const starsFor = (n, par) => (n <= par ? 3 : n <= par + 3 ? 2 : 1);
+const word = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'команда' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'команды' : 'команд');
+const pos = (k) => GAP + k * (1 + GAP); // координата клетки в единицах клетки
 
 // robot: { name, head, move, tool, color }; best: { missionId: команд }
 export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
   const el = layer('robot');
-  robot = { ...robot };
+  robot = { ...DEFAULT_ROBOT, ...robot };
+  for (const k of ['head', 'move', 'tool']) if (!part(k, robot[k])) robot[k] = DEFAULT_ROBOT[k];
   best = { ...best };
   let m = null;
   let g = null;
   let program = [];
+  let sel = -1;
   let st = null;
   let running = false;
+  let stepping = null; // пошаговый запуск (антенна): итератор
   let hints = 0;
   let peekTm = 0;
   let showMap = true;
+  let tab = 'move';
   const stop = () => { running = false; clearTimeout(peekTm); document.removeEventListener('keydown', onKey); closeLayer(el); };
   const head = (title, sub, back = true) => `<div class="g-head"><button type="button" class="g-close" ${back ? 'data-back' : 'data-exit'} aria-label="${back ? 'Назад' : 'Выйти'}">${back ? '←' : '✕'}</button>
     <div class="g-title">${title}</div><div class="g-hint">${sub}</div></div>`;
   const unlocked = (i) => i < 3 || MISSIONS.slice(0, i).filter((x) => best[x.id]).length >= i - 1;
+  const skills = () => [part('move', robot.move), part('tool', robot.tool), part('head', robot.head)];
 
   // ------------------------------------------------ главная: робот и миссии
   const hub = () => {
+    m = null;
     const doneN = MISSIONS.filter((x) => best[x.id]).length;
     el.innerHTML = `${head('Робот', 'Собери робота и запрограммируй его', false)}
       <div class="k-wrap">
-        <div class="rb-hub"><div class="rb-me">${robotSVG(robot, 120)}</div>
-          <div><b class="rb-name">${esc(robot.name)}</b>
-            <div class="small muted">${[part('head', robot.head), part('move', robot.move), part('tool', robot.tool)].map((p) => `${p.emoji} ${p.label}`).join(' · ')}</div>
-            <button type="button" class="pill-btn soft" data-workshop>🔧 Мастерская</button></div></div>
+        <div class="rb-hub"><div class="rb-stage small-stage">${robotSVG(robot, 130)}</div>
+          <div class="rb-hub-info"><b class="rb-name">${esc(robot.name)}</b>
+            <div class="rb-skills">${skills().map((p) => `<span>${p.emoji} ${p.label}</span>`).join('')}</div>
+            <button type="button" class="pill-btn" data-workshop>🔧 Мастерская</button></div></div>
         <div class="k-cap">Миссии · пройдено ${doneN} из ${MISSIONS.length}</div>
         <div class="rb-missions">${MISSIONS.map((x, i) => {
           const open = unlocked(i);
           const b = best[x.id];
           const par = b ? solve(parseMission(x), x, robot)?.length : null;
-          return `<button type="button" class="rb-mission ${open ? '' : 'locked'}" ${open ? `data-mission="${x.id}"` : 'disabled'}>
-            <span class="rb-me2">${open ? x.emoji : '🔒'}</span><b>${i + 1}. ${esc(x.title)}</b>
-            <span class="small muted">${b ? `${'⭐'.repeat(par ? starsFor(b, par) : 1)} · ${b} ${b === 1 ? 'команда' : b < 5 ? 'команды' : 'команд'}` : open ? esc(x.task) : 'Пройди предыдущие'}</span></button>`;
+          return `<button type="button" class="rb-mission ${open ? '' : 'locked'} ${b ? 'done' : ''}" ${open ? `data-mission="${x.id}"` : 'disabled'}>
+            <span class="rb-mi">${open ? x.emoji : '🔒'}</span><span class="rb-mt"><b>${i + 1}. ${esc(x.title)}</b>
+            <span class="small muted">${b ? `${'⭐'.repeat(par ? starsFor(b, par) : 1)} · ${b} ${word(b)}` : open ? esc(x.task) : 'Пройди предыдущие'}</span></span></button>`;
         }).join('')}</div>
       </div>`;
   };
 
   // ------------------------------------------------ мастерская
+  const TABS = [['move', '🦿', 'Ход'], ['tool', '✋', 'Рука'], ['head', '🤖', 'Голова'], ['color', '🎨', 'Цвет']];
   const workshop = () => {
-    const row = (kind, title) => `<div class="rb-sec"><div class="k-cap">${title}</div><div class="rb-opts">${PARTS[kind].map((p) => `
-      <button type="button" class="rb-opt ${robot[kind] === p.id ? 'on' : ''}" data-part="${kind}" data-id="${p.id}" aria-pressed="${robot[kind] === p.id}">
-        <span>${p.emoji}</span><b>${p.label}</b><small>${esc(p.perk)}</small></button>`).join('')}</div></div>`;
-    el.innerHTML = `${head('Мастерская', 'Каждая деталь что-то умеет. Выбирай под миссию')}
-      <div class="k-wrap">
-        <div class="rb-preview">${robotSVG(robot, 170)}</div>
-        <label class="rb-namefield">Имя робота <input type="text" maxlength="16" value="${esc(robot.name)}" data-name></label>
-        ${row('move', '🦿 Чем передвигается')}${row('tool', '🛠️ Что в руке')}${row('head', '🤖 Голова')}
-        <div class="rb-sec"><div class="k-cap">🎨 Цвет</div><div class="rb-colors">${PARTS.color.map((p) => `<button type="button" class="rb-color ${robot.color === p.id ? 'on' : ''}" style="background:${p.id}" data-part="color" data-id="${p.id}" aria-label="${p.label}"></button>`).join('')}</div></div>
-        <div class="s-foot"><button type="button" class="pill-btn" data-back>Готово!</button></div>
+    const opts = tab === 'color'
+      ? `<div class="ws-colors">${PARTS.color.map((p) => `<button type="button" class="ws-color ${robot.color === p.id ? 'on' : ''}" style="--c:${p.id}" data-part="color" data-id="${p.id}" aria-label="${p.label}" aria-pressed="${robot.color === p.id}"></button>`).join('')}</div>`
+      : `<div class="ws-opts">${PARTS[tab].map((p) => `
+        <button type="button" class="ws-opt ${robot[tab] === p.id ? 'on' : ''}" data-part="${tab}" data-id="${p.id}" aria-pressed="${robot[tab] === p.id}">
+          <span class="ws-mini">${robotSVG({ ...robot, [tab]: p.id }, 74)}</span>
+          <b>${p.emoji} ${p.label}</b><small>${esc(p.perk)}</small>${robot[tab] === p.id ? '<i class="ws-check">✓</i>' : ''}</button>`).join('')}</div>`;
+    el.innerHTML = `${head('Мастерская', 'Каждая деталь что-то умеет. Собери робота под миссию')}
+      <div class="k-wrap ws">
+        <div class="rb-stage"><div class="ws-bot">${robotSVG(robot, 190, 'cheer')}</div>
+          <label class="ws-plate"><span>Имя</span><input type="text" maxlength="16" value="${esc(robot.name)}" data-name aria-label="Имя робота"></label></div>
+        <div class="rb-skills center">${skills().map((p) => `<span>${p.emoji} ${p.label}</span>`).join('')}</div>
+        <div class="ws-tabs" role="tablist">${TABS.map(([k, e, l]) => `<button type="button" role="tab" class="ws-tab ${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-tab="${k}"><span>${e}</span>${l}</button>`).join('')}</div>
+        ${opts}
+        <div class="s-foot"><button type="button" class="pill-btn" data-back>Готово, к миссиям!</button></div>
       </div>`;
   };
 
-  // ------------------------------------------------ миссия: карта и программа
+  // ------------------------------------------------ миссия
   const startMission = (id) => {
     m = MISSIONS.find((x) => x.id === id);
     g = parseMission(m);
     program = [];
+    sel = -1;
     hints = 0;
     resetRun();
     showMap = !(m.dark && robot.head !== 'lamp');
     if (!showMap) peek();
     mission();
   };
-  const resetRun = () => { st = initState(g, m, robot); running = false; };
+  const resetRun = () => { st = initState(g, m, robot); running = false; stepping = null; };
   const peek = () => {
     showMap = true;
     clearTimeout(peekTm);
     peekTm = setTimeout(() => { showMap = false; if (m && !running) mission('Карта погасла. Помнишь дорогу?'); }, 5000);
   };
 
-  const mapHTML = (trail = []) => {
-    const seenCells = new Set(trail.map(([r, c]) => `${r},${c}`));
-    const near = (r, c) => Math.abs(r - st.r) + Math.abs(c - st.c) <= 1;
+  const mapHTML = (seen = []) => {
+    const seenSet = new Set(seen.map(([r, c]) => `${r},${c}`));
     const dark = m.dark && robot.head !== 'lamp' && !showMap;
-    return `<div class="rb-map" style="--w:${g.w};--h:${g.h}">
+    const near = (r, c) => Math.abs(r - st.r) + Math.abs(c - st.c) <= 1;
+    const W = pos(g.w);
+    const H = pos(g.h);
+    const plan = plannedPath(g, program);
+    const P = (r, c) => `${(pos(c) + 0.5).toFixed(2)},${(pos(r) + 0.5).toFixed(2)}`;
+    // номера команд у точки, где команда начинается
+    let r0 = g.start[0];
+    let c0 = g.start[1];
+    const labels = [];
+    program.forEach((p, k) => {
+      if (p.c === 'A') { labels.push({ r: r0, c: c0, k, act: true }); return; }
+      labels.push({ r: r0, c: c0, k, d: p.d });
+      const sub = plannedPath({ ...g, start: [r0, c0] }, [p]).pts;
+      [r0, c0] = sub[sub.length - 1];
+    });
+    const overlay = `<svg class="rb-plan" viewBox="0 0 ${W.toFixed(2)} ${H.toFixed(2)}" aria-hidden="true">
+      <defs><marker id="rbarr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7c3aed"/></marker></defs>
+      ${plan.pts.length > 1 ? `<polyline points="${plan.pts.map(([r, c]) => P(r, c)).join(' ')}" fill="none" stroke="#7c3aed" stroke-width=".12" stroke-dasharray=".22 .14" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#rbarr)" opacity=".85"/>` : ''}
+    </svg><svg class="rb-plan top" viewBox="0 0 ${W.toFixed(2)} ${H.toFixed(2)}" aria-hidden="true">
+      ${labels.map((l) => `<g class="${l.k === sel ? 'sel' : ''}"><circle cx="${(pos(l.c) + (l.act ? 0.84 : 0.16)).toFixed(2)}" cy="${(pos(l.r) + 0.16).toFixed(2)}" r=".16" fill="${l.k === sel ? '#f59e0b' : '#7c3aed'}"/>
+        <text x="${(pos(l.c) + (l.act ? 0.84 : 0.16)).toFixed(2)}" y="${(pos(l.r) + 0.22).toFixed(2)}" font-size=".19" text-anchor="middle" fill="#fff" font-weight="800">${l.k + 1}</text></g>`).join('')}
+    </svg>`;
+    return `<div class="rb-map" style="--w:${g.w};--h:${g.h};--gap:${GAP}">
       ${g.cells.map((row, r) => row.map((ch, c) => {
         const ti = g.targets.findIndex((t) => t.r === r && t.c === c);
         const doneT = ti >= 0 && st.done & (1 << ti);
-        let e = CELL_EMOJI[ch] || '';
+        let e = CELL[ch] || '';
         if (doneT && ch !== 'C') e = '';
-        const hidden = dark && !near(r, c) && !seenCells.has(`${r},${c}`);
-        return `<div class="rb-cell t-${ch === '#' ? 'wall' : ch === '~' ? 'water' : ch === '%' ? 'mud' : 'floor'} ${hidden ? 'dark' : ''}">${hidden ? '' : e}${doneT && ch === 'C' ? '<i class="rb-badge">💦</i>' : ''}${ch === 'H' && st.delivered ? `<i class="rb-badge">${st.delivered}</i>` : ''}${!hidden && trail.length && seenCells.has(`${r},${c}`) && !(r === g.start[0] && c === g.start[1]) ? '<i class="rb-dot"></i>' : ''}</div>`;
+        const hidden = dark && !near(r, c) && !seenSet.has(`${r},${c}`);
+        const kind = { '#': 'wall', '~': 'water', '%': 'mud', '^': 'rock' }[ch] || (ch === 'S' ? 'start' : 'floor');
+        return `<div class="rb-cell t-${kind} ${hidden ? 'dark' : ''}">${hidden ? '' : e}${doneT && ch === 'C' ? '<i class="rb-badge">💦</i>' : ''}${ch === 'H' && st.delivered ? `<i class="rb-badge">${st.delivered}</i>` : ''}</div>`;
       }).join('')).join('')}
-      <div class="rb-bot" style="--r:${st.r};--c:${st.c}">${robotSVG(robot, 40)}<i class="rb-arrow" style="transform:rotate(${ARROW[st.d]}deg)">▲</i>${st.carry ? `<i class="rb-carry">📦${st.carry > 1 ? st.carry : ''}</i>` : ''}</div>
+      ${overlay}
+      <div class="rb-bot" style="--x:${pos(st.c)};--y:${pos(st.r)}">${robotSVG(robot, 60, 'happy', st.d === 'W')}${st.carry ? `<i class="rb-carry">📦${st.carry > 1 ? st.carry : ''}</i>` : ''}</div>
     </div>`;
   };
 
   const chipHTML = (p, k, cur) => {
-    const sym = { F: '⬆', L: '↺', R: '↻', A: '✋', U: '⏩' }[p.c];
-    return `<button type="button" class="rb-chip ${k === cur ? 'cur' : ''}" data-del="${k}" ${running ? 'disabled' : ''} aria-label="Убрать команду ${k + 1}">${sym}${p.n > 1 ? `<small>×${p.n}</small>` : ''}</button>`;
+    const face = p.c === 'A' ? ACT[robot.tool][0] : DIR[p.d].arrow;
+    return `<button type="button" class="rb-chip ${k === cur ? 'cur' : ''} ${k === sel ? 'sel' : ''} ${p.c === 'A' ? 'act' : ''}" data-chip="${k}" ${running ? 'disabled' : ''}
+      aria-label="Команда ${k + 1}: ${p.c === 'A' ? ACT[robot.tool][1] : `${DIR[p.d].word} ${p.n}`}"><i>${k + 1}</i><span>${face}</span>${p.c === 'M' ? `<b>${p.n}</b>` : ''}</button>`;
+  };
+
+  const editBar = () => {
+    if (sel < 0 || !program[sel]) return '';
+    const p = program[sel];
+    return `<div class="rb-edit"><span>Команда ${sel + 1}: ${p.c === 'A' ? `${ACT[robot.tool][0]} ${ACT[robot.tool][1]}` : `${DIR[p.d].arrow} ${DIR[p.d].word} на ${p.n}`}</span>
+      ${p.c === 'M' ? '<button type="button" data-ed="-1" aria-label="Меньше шагов">−</button><button type="button" data-ed="1" aria-label="Больше шагов">+</button>' : ''}
+      <button type="button" data-ed="del" aria-label="Удалить команду">🗑</button><button type="button" data-ed="ok">Готово</button></div>`;
   };
 
   const mission = (msg = '', cur = -1) => {
-    const preview = robot.head === 'camera' && !running && program.length ? simulate(g, m, robot, program).trail : [];
     const energy = robot.move === 'fly' ? `<span class="rb-energy">🔋 ${Number.isFinite(st.energy) ? st.energy : FLY_ENERGY}</span>` : '';
+    const dis = running ? 'disabled' : '';
+    const pad = (d) => `<button type="button" class="rb-dir d-${d}" data-dir="${d}" ${dis} aria-label="${DIR[d].word}">${DIR[d].arrow}<span>${DIR[d].word}</span></button>`;
     el.innerHTML = `${head(`${m.emoji} ${esc(m.title)}`, esc(m.task))}
-      <div class="k-wrap rb-wrap">
-        ${mapHTML(preview)}
-        <div class="k-say show rb-say" data-say>${esc(msg || (m.tip && !program.length ? `Совет: ${m.tip}` : 'Нажимай команды, потом «Запустить».'))} ${energy}</div>
-        <div class="rb-prog" aria-label="Программа">${program.length ? program.map((p, k) => chipHTML(p, k, cur)).join('') : '<span class="small muted">Программа пустая</span>'}</div>
-        <div class="rb-pal">
-          <button type="button" class="rb-cmd" data-cmd="F" ${running ? 'disabled' : ''}>⬆<span>Вперёд</span></button>
-          <button type="button" class="rb-cmd" data-cmd="L" ${running ? 'disabled' : ''}>↺<span>Налево</span></button>
-          <button type="button" class="rb-cmd" data-cmd="R" ${running ? 'disabled' : ''}>↻<span>Направо</span></button>
-          <button type="button" class="rb-cmd" data-cmd="A" ${running ? 'disabled' : ''}>✋<span>${ACT_LABEL[robot.tool]}</span></button>
-          ${robot.move === 'wheels' ? `<button type="button" class="rb-cmd" data-cmd="U" ${running ? 'disabled' : ''}>⏩<span>До упора</span></button>` : ''}
+      <div class="rb-play">
+        <div class="rb-left">
+          ${mapHTML(m.dark ? [] : [])}
+          <div class="rb-say" data-say>${esc(msg || (m.tip && !program.length ? `Совет: ${m.tip}` : program.length ? 'Пунктир показывает план. Нажми «Запустить», и робот поедет.' : 'Нажимай стрелки: куда ехать роботу по карте?'))} ${energy}</div>
         </div>
-        <div class="rb-mult">${[2, 3, 4, 5].map((n) => `<button type="button" class="rb-x" data-mult="${n}" ${running ? 'disabled' : ''}>×${n}</button>`).join('')}<span class="small muted">повторить последнюю</span></div>
-        <div class="s-foot">
-          <button type="button" class="pill-btn ghost" data-undo ${running ? 'disabled' : ''}>⌫</button>
-          <button type="button" class="pill-btn ghost" data-clear ${running ? 'disabled' : ''}>🗑</button>
-          ${m.dark && robot.head !== 'lamp' ? `<button type="button" class="pill-btn ghost" data-peek ${running ? 'disabled' : ''}>👀 Карта</button>` : ''}
-          ${robot.head === 'brain' ? `<button type="button" class="pill-btn ghost" data-hint ${running || hints >= 3 ? 'disabled' : ''}>💡 ${3 - hints}</button>` : ''}
-          <button type="button" class="pill-btn" data-run ${running || !program.length ? 'disabled' : ''}>▶ Запустить</button>
+        <div class="rb-right">
+          <div class="rb-prog" aria-label="Программа">${program.length ? program.map((p, k) => chipHTML(p, k, cur)).join('') : '<span class="small muted">Программа пустая. Каждое нажатие стрелки = шаг на одну клетку.</span>'}</div>
+          ${editBar()}
+          <div class="rb-pad">${pad('N')}${pad('W')}<button type="button" class="rb-dir d-act" data-act ${dis} aria-label="${ACT[robot.tool][1]}">${ACT[robot.tool][0]}<span>${ACT[robot.tool][1]}</span></button>${pad('E')}${pad('S')}</div>
+          <div class="rb-ctrl">
+            <button type="button" class="pill-btn ghost" data-undo ${dis} aria-label="Убрать последний шаг">⌫</button>
+            <button type="button" class="pill-btn ghost" data-clear ${dis} aria-label="Очистить программу">🗑</button>
+            ${m.dark && robot.head !== 'lamp' ? `<button type="button" class="pill-btn ghost" data-peek ${dis}>👀 Карта</button>` : ''}
+            ${robot.head === 'brain' ? `<button type="button" class="pill-btn ghost" data-hint ${running || hints >= 3 ? 'disabled' : ''}>💡 ${3 - hints}</button>` : ''}
+            ${robot.head === 'antenna' ? `<button type="button" class="pill-btn ghost" data-step ${running || !program.length ? 'disabled' : ''}>👣 Шаг</button>` : ''}
+            <button type="button" class="pill-btn rb-run" data-run ${running || !program.length ? 'disabled' : ''}>▶ Запустить</button>
+          </div>
         </div>
       </div>`;
   };
 
   const wait = (ms) => new Promise((res) => setTimeout(res, reduced() ? 40 : ms));
+  const htmlNode = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+
+  // все элементарные шаги программы по очереди
+  function* allSteps() {
+    let s = initState(g, m, robot);
+    for (let k = 0; k < program.length; k++) {
+      for (const x of runCommand(g, robot, s, program[k])) { s = x.s; yield { ...x, k }; }
+    }
+  }
+  const evText = (x) => EV_TEXT[x.ev] || (x.ev === 'notool' ? `Нечем это сделать: нужен инструмент «${part('tool', x.need).label}»` : `Команда ${x.k + 1} из ${program.length}`);
+  const showStep = (x, seen) => {
+    st = x.s;
+    if (x.ev === null) seen.push([st.r, st.c]);
+    mission(evText(x), x.k);
+    el.querySelector('.rb-map')?.replaceWith(htmlNode(mapHTML(seen)));
+    const bot = el.querySelector('.rb-bot');
+    if (STOP.has(x.ev)) bot?.classList.add('oops');
+    else if (x.ev && x.ev !== 'turn') bot?.classList.add('busy');
+  };
 
   const run = async () => {
+    sel = -1;
     resetRun();
     running = true;
     const seen = [[st.r, st.c]];
     mission('Поехали!', 0);
-    for (let k = 0; k < program.length; k++) {
-      for (const x of runCommand(g, robot, st, program[k])) {
-        if (!running) return;
-        st = x.s;
-        if (x.ev === null) seen.push([st.r, st.c]);
-        // карту перерисовываем целиком: она маленькая
-        mission(EV_TEXT[x.ev] || (x.ev === 'notool' ? `Нечем это сделать: нужен инструмент «${part('tool', x.need).label}»` : `Команда ${k + 1} из ${program.length}`), k);
-        el.querySelector('.rb-map')?.replaceWith(htmlNode(mapHTML(m.dark ? seen : [])));
-        if (STOP.has(x.ev)) { await wait(400); return fail(x.ev); }
-        await wait(x.ev === 'turn' ? 260 : x.ev === null ? 380 : 650);
-      }
+    await wait(250);
+    for (const x of allSteps()) {
+      if (!running) return;
+      showStep(x, seen);
+      if (STOP.has(x.ev)) { await wait(500); return fail(x.ev); }
+      await wait(x.ev === 'turn' ? 120 : x.ev === null ? 420 : 700);
     }
     running = false;
-    if (isWin(g, st)) return win();
-    return fail(null);
+    return isWin(g, st) ? win() : fail(null);
   };
-  const htmlNode = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+
+  const step = () => {
+    if (!stepping) { sel = -1; resetRun(); stepping = { it: allSteps(), seen: [[st.r, st.c]] }; }
+    let x = stepping.it.next();
+    while (!x.done && x.value.ev === 'turn') x = stepping.it.next();
+    if (x.done) { const ok = isWin(g, st); stepping = null; return ok ? win() : fail(null); }
+    showStep(x.value, stepping.seen);
+    if (STOP.has(x.value.ev)) { stepping = null; fail(x.value.ev); }
+  };
 
   const fail = (ev) => {
     running = false;
@@ -170,45 +242,56 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
     if (need('B')) left.push(`собрать детали: ${need('B')}`);
     const undelivered = g.targets.filter((x) => x.t === 'I').length - st.delivered;
     if (undelivered) left.push(`доставить посылки: ${undelivered}`);
-    if (g.exit && !(st.r === g.exit[0] && st.c === g.exit[1])) left.push('доехать до флажка');
+    if (g.exit && !(st.r === g.exit[0] && st.c === g.exit[1])) left.push('доехать до флажка 🏁');
     const possible = solve(g, m, robot);
     const why = ev ? EV_TEXT[ev] : `Программа закончилась. Осталось: ${left.join(', ')}.`;
-    mission(`${why}${possible ? ' Исправь программу и попробуй ещё раз.' : ' С этими деталями здесь не пройти, загляни в мастерскую 🔧'}`);
+    mission(`${why}${possible ? ' Поправь программу и запусти ещё раз.' : ' С этими деталями здесь не пройти, загляни в мастерскую 🔧'}`);
+    if (ev) el.querySelector('.rb-bot')?.classList.add('oops');
   };
 
   const win = () => {
     const par = solve(g, m, robot)?.length || program.length;
     const n = program.length;
     const stars = starsFor(n, par);
-    const prev = best[m.id];
-    best[m.id] = prev ? Math.min(prev, n) : n;
+    best[m.id] = best[m.id] ? Math.min(best[m.id], n) : n;
     el.innerHTML = `<div class="g-end">
-      <div class="rb-preview">${robotSVG(robot, 150)}</div>
+      <div class="rb-stage"><div class="ws-bot dance">${robotSVG(robot, 170, 'cheer')}</div></div>
       <h2>Миссия выполнена!</h2>
       <div class="rb-stars">${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>
-      <p class="g-end-note">В твоей программе ${n} ${n === 1 ? 'команда' : n < 5 ? 'команды' : 'команд'}. ${n <= par ? 'Это самая короткая программа, какую знает Медок!' : `Медок знает решение из ${par}. Попробуешь короче? Подсказка: повторы ×2, ×3 экономят команды.`}</p>
-      <div class="k-meaning">${hero('medok', 'cheer', 64)}<p>Программисты тоже сначала пишут длинно, а потом ищут, как короче. Главное, что робот сделал ровно то, что ты сказала.</p></div>
+      <p class="g-end-note">В программе ${n} ${word(n)}. ${n <= par ? 'Это самая короткая программа, какую знает Медок!' : `Медок знает решение из ${par}. Попробуешь короче? Подсказка: «➡ 3» это одна команда, а «➡ 1, ➡ 1, ➡ 1» почти то же, но нажимай стрелку подряд, и шаги склеятся.`}</p>
+      <div class="k-meaning">${hero('medok', 'cheer', 64)}<p>Робот делает ровно то, что написано в программе. Поэтому программисты сначала думают, а потом проверяют, как настоящие детективы.</p></div>
       <div class="g-end-btns"><button type="button" class="pill-btn" data-again>Ещё раз</button><button type="button" class="pill-btn ghost" data-back>К миссиям</button></div></div>`;
     onFinish?.({ g: 'robot', mode: 'solo', mission: m.id, scores: [n], of: par, stars });
   };
 
   const hint = () => {
     const sim = simulate(g, m, robot, program);
-    if (sim.fail) return mission(`Сначала исправь программу: на команде ${sim.at + 1} робот останавливается.`);
+    if (sim.fail) return mission(`Сначала поправь программу: на команде ${sim.at + 1} робот останавливается.`);
     const rest = solve(g, m, robot, sim.s);
-    if (!rest) return mission('Из этого места не дойти. Попробуй стереть последние команды.');
+    if (!rest) return mission('Отсюда не дойти. Попробуй убрать последние команды.');
     if (!rest.length) return mission('Программа уже готова, запускай!');
     hints++;
     const p = rest[0];
-    const names = { F: 'вперёд', L: 'налево', R: 'направо', A: ACT_LABEL[robot.tool].toLowerCase(), U: 'до упора' };
-    return mission(`💡 Следующая команда: ${names[p.c]}${p.n > 1 ? ` ×${p.n}` : ''}.`);
+    return mission(`💡 Следующая команда: ${p.c === 'A' ? `${ACT[robot.tool][0]} ${ACT[robot.tool][1].toLowerCase()}` : `${DIR[p.d].arrow} ${DIR[p.d].word} на ${p.n}`}.`);
+  };
+
+  const addMove = (d) => {
+    const last = program[program.length - 1];
+    if (sel < 0 && last && last.c === 'M' && last.d === d && last.n < 9) last.n++;
+    else if (program.length >= 30) return mission('Слишком длинная программа. Нажимай стрелку подряд: шаги склеятся в одну команду.');
+    else program.push({ c: 'M', d, n: 1 });
+    sel = -1;
+    resetRun();
+    mission();
   };
 
   el.addEventListener('click', (ev) => {
     const t = ev.target;
     if (t.closest('[data-exit]')) return stop();
-    if (t.closest('[data-back]')) { running = false; clearTimeout(peekTm); m = null; return hub(); }
+    if (t.closest('[data-back]')) { running = false; clearTimeout(peekTm); return hub(); }
     if (t.closest('[data-workshop]')) return workshop();
+    const tb = t.closest('[data-tab]');
+    if (tb) { tab = tb.dataset.tab; return workshop(); }
     const pt = t.closest('[data-part]');
     if (pt) {
       robot[pt.dataset.part] = pt.dataset.id;
@@ -216,47 +299,49 @@ export function playRobot({ robot, best = {}, hero, onRobot, onFinish }) {
       const y = el.scrollTop;
       workshop();
       el.scrollTop = y;
+      el.querySelector('.ws-bot')?.classList.add('pop');
       return;
     }
     const mi = t.closest('[data-mission]');
     if (mi) return startMission(mi.dataset.mission);
     if (t.closest('[data-again]')) return startMission(m.id);
     if (!m || running) return;
-    const cmd = t.closest('[data-cmd]');
-    if (cmd) {
-      if (program.length >= 40) return mission('Слишком длинная программа. Попробуй повторы ×2, ×3.');
-      const c = cmd.dataset.cmd;
-      const last = program[program.length - 1];
-      // два одинаковых шага подряд склеиваем в повтор: так программа короче
-      if (last && last.c === c && 'FLR'.includes(c) && (last.n || 1) < 9) last.n = (last.n || 1) + 1;
-      else program.push({ c, n: 1 });
+    const d = t.closest('[data-dir]');
+    if (d) return addMove(d.dataset.dir);
+    if (t.closest('[data-act]')) {
+      if (program.length >= 30) return mission('Слишком длинная программа.');
+      program.push({ c: 'A' }); sel = -1; resetRun(); return mission();
+    }
+    const ch = t.closest('[data-chip]');
+    if (ch) { sel = sel === +ch.dataset.chip ? -1 : +ch.dataset.chip; return mission(); }
+    const ed = t.closest('[data-ed]');
+    if (ed && program[sel]) {
+      const v = ed.dataset.ed;
+      if (v === 'del') { program.splice(sel, 1); sel = -1; } else if (v === 'ok') sel = -1;
+      else program[sel].n = Math.max(1, Math.min(9, program[sel].n + +v));
       resetRun();
       return mission();
     }
-    const mu = t.closest('[data-mult]');
-    if (mu) {
+    if (t.closest('[data-undo]')) {
       const last = program[program.length - 1];
-      if (!last || last.c === 'U') return mission('Сначала добавь команду, которую нужно повторить.');
-      last.n = +mu.dataset.mult;
-      resetRun();
-      return mission();
+      if (last?.c === 'M' && last.n > 1) last.n--; else program.pop();
+      sel = -1; resetRun(); return mission();
     }
-    const del = t.closest('[data-del]');
-    if (del) { program.splice(+del.dataset.del, 1); resetRun(); return mission(); }
-    if (t.closest('[data-undo]')) { program.pop(); resetRun(); return mission(); }
-    if (t.closest('[data-clear]')) { program = []; resetRun(); return mission(); }
+    if (t.closest('[data-clear]')) { program = []; sel = -1; resetRun(); return mission(); }
     if (t.closest('[data-peek]')) { peek(); return mission('Смотри и запоминай!'); }
     if (t.closest('[data-hint]')) return hint();
+    if (t.closest('[data-step]')) return step();
     if (t.closest('[data-run]')) return run();
   });
   el.addEventListener('input', (ev) => {
     if (ev.target.matches('[data-name]')) { robot.name = ev.target.value.trim() || 'Робот'; onRobot?.({ ...robot }); }
   });
   const onKey = (ev) => {
-    if (ev.key === 'Escape') stop();
+    if (ev.key === 'Escape') return stop();
     if (!m || running || ev.target.matches?.('input')) return;
-    const k = { ArrowUp: 'F', ArrowLeft: 'L', ArrowRight: 'R', ' ': 'A' }[ev.key];
-    if (k) { ev.preventDefault(); el.querySelector(`[data-cmd="${k}"]`)?.click(); }
+    const k = { ArrowUp: 'N', ArrowDown: 'S', ArrowLeft: 'W', ArrowRight: 'E' }[ev.key];
+    if (k) { ev.preventDefault(); addMove(k); }
+    if (ev.key === ' ') { ev.preventDefault(); el.querySelector('[data-act]')?.click(); }
     if (ev.key === 'Enter') el.querySelector('[data-run]')?.click();
     if (ev.key === 'Backspace') el.querySelector('[data-undo]')?.click();
   };
