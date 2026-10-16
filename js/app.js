@@ -15,7 +15,7 @@ import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.3.0';
+const VERSION = '2.3.1';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
