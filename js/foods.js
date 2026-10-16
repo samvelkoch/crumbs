@@ -7,6 +7,7 @@ export const SECTORS = {
   fruit: { label: 'Фрукты', emoji: '🍏', color: 'var(--c-fruit)' },
   treat: { label: 'Сладкое и перекусы', emoji: '🍪', color: 'var(--c-treat)' },
   drink: { label: 'Напитки и молочное', emoji: '🥤', color: 'var(--c-drink)' },
+  dish: { label: 'Блюда', emoji: '🍲', color: 'var(--c-dish)' },
 };
 
 // Семейства объединяют продукты, у которых общий компонент. Радар проверяет и их.
@@ -36,14 +37,14 @@ export const FOODS = [
   { id: 'corn', label: 'Кукуруза', emoji: '🌽', sector: 'veg', stems: ['кукуруз'] },
   { id: 'peas', label: 'Горошек', emoji: '🫛', sector: 'veg', stems: ['горош'] },
   // белок
-  { id: 'chicken', label: 'Курица', emoji: '🍗', sector: 'prot', stems: ['куриц', 'курин', 'наггетс'] },
+  { id: 'chicken', label: 'Курица', emoji: '🍗', sector: 'prot', stems: ['куриц', 'курин'] },
   { id: 'turkey', label: 'Индейка', emoji: '🦃', sector: 'prot', stems: ['индей', 'индюш'] },
   { id: 'beef', label: 'Говядина', emoji: '🥩', sector: 'prot', stems: ['говяд', 'телят', 'мяс', 'стейк', 'фарш'] },
   { id: 'pork', label: 'Свинина', emoji: '🥓', sector: 'prot', stems: ['свин', 'бекон', 'ветчин'] },
   { id: 'sausage', label: 'Сосиски, колбаса', emoji: '🌭', sector: 'prot', stems: ['сосис', 'колбас', 'сардел'] },
   { id: 'fish', label: 'Рыба', emoji: '🐟', sector: 'prot', fam: ['fish'], stems: ['рыб', 'лосос', 'семг', 'треск', 'тунец', 'тунц', 'форел', 'минта'] },
   { id: 'shrimp', label: 'Креветки', emoji: '🦐', sector: 'prot', fam: ['fish'], stems: ['кревет', 'морепрод', 'кальмар'] },
-  { id: 'egg', label: 'Яйца', emoji: '🥚', sector: 'prot', fam: ['egg'], stems: ['яйц', 'яйк', 'яичн', 'омлет'] },
+  { id: 'egg', label: 'Яйца', emoji: '🥚', sector: 'prot', fam: ['egg'], stems: ['яйц', 'яйк', 'яичн'] },
   { id: 'cheese', label: 'Сыр', emoji: '🧀', sector: 'prot', fam: ['dairy'], stems: ['сыр', 'моцарел', 'пармез'] },
   { id: 'cottage', label: 'Творог', emoji: '🥣', sector: 'prot', fam: ['dairy'], stems: ['творо', 'творож'] },
   { id: 'beans', label: 'Фасоль, чечевица', emoji: '🫘', sector: 'prot', stems: ['фасол', 'чечев', 'нут', 'хумус'] },
@@ -53,7 +54,7 @@ export const FOODS = [
   { id: 'oats', label: 'Овсянка', emoji: '🥣', sector: 'carb', stems: ['овся', 'овес', 'гранол', 'мюсли'] },
   { id: 'pasta', label: 'Макароны', emoji: '🍝', sector: 'carb', fam: ['wheat'], stems: ['макар', 'паст', 'спагет', 'лапш', 'вермиш'] },
   { id: 'potato', label: 'Картофель', emoji: '🥔', sector: 'carb', stems: ['картоф', 'картош', 'пюре', 'фри'] },
-  { id: 'bread', label: 'Хлеб', emoji: '🍞', sector: 'carb', fam: ['wheat'], stems: ['хлеб', 'тост', 'батон', 'булк', 'бутер', 'лаваш', 'багет'] },
+  { id: 'bread', label: 'Хлеб', emoji: '🍞', sector: 'carb', fam: ['wheat'], stems: ['хлеб', 'тост', 'батон', 'булк', 'лаваш', 'багет'] },
   { id: 'semolina', label: 'Манка', emoji: '🥣', sector: 'carb', fam: ['wheat'], stems: ['манк', 'манн'] },
   { id: 'corncereal', label: 'Хлопья', emoji: '🥣', sector: 'carb', stems: ['хлопь', 'кукурузн'] },
   // фрукты
@@ -87,37 +88,49 @@ export const FOODS = [
   { id: 'juice', label: 'Сок', emoji: '🧃', sector: 'drink', stems: ['сок'] },
   { id: 'compote', label: 'Компот, морс', emoji: '🍹', sector: 'drink', stems: ['компот', 'морс'] },
   { id: 'tea', label: 'Чай', emoji: '🍵', sector: 'drink', stems: ['чай', 'чаю'] },
-  { id: 'soda', label: 'Газировка', emoji: '🥤', sector: 'drink', stems: ['газир', 'кола', 'лимонад', 'спрайт', 'фанта'] },
+  { id: 'soda', label: 'Газировка', emoji: '🥤', sector: 'drink', stems: ['газир', 'кола', 'колу', 'лимонад', 'спрайт', 'фанта', 'пепси'] },
+  { id: 'bubbletea', label: 'Баббл ти', emoji: '🧋', sector: 'drink', fam: ['dairy'], stems: ['баббл', 'бабл', 'bubble'] },
+  { id: 'icetea', label: 'Холодный чай', emoji: '🧊', sector: 'drink', stems: ['холодн', 'айс'] },
+  { id: 'milkshake', label: 'Молочный коктейль', emoji: '🥤', sector: 'drink', fam: ['dairy'], stems: ['коктейл', 'милкшейк'] },
+  // блюда: сами по себе улика для Радара и раскладываются на продукты (parts).
+  // generic: общее слово; если рядом назван продукт («каша гречневая»), берём продукт.
+  // plate: клетка тарелки, если её не дают продукты.
+  { id: 'porridge', label: 'Каша', emoji: '🥣', sector: 'dish', generic: true, plate: 'carb', parts: [], stems: ['каш'] },
+  { id: 'soup', label: 'Суп', emoji: '🍲', sector: 'dish', generic: true, plate: 'veg', parts: [], stems: ['суп', 'бульон'] },
+  { id: 'sandwich', label: 'Бутерброд', emoji: '🥪', sector: 'dish', generic: true, parts: ['bread'], stems: ['бутер', 'сэндвич', 'сендвич'] },
+  { id: 'omelet', label: 'Омлет', emoji: '🍳', sector: 'dish', parts: ['egg', 'milk'], stems: ['омлет'] },
+  { id: 'pelmeni', label: 'Пельмени', emoji: '🥟', sector: 'dish', parts: ['bread', 'beef'], stems: ['пельмен'] },
+  { id: 'vareniki', label: 'Вареники', emoji: '🥟', sector: 'dish', generic: true, parts: ['bread'], stems: ['вареник'] },
+  { id: 'cutlet', label: 'Котлеты', emoji: '🍖', sector: 'dish', parts: ['beef', 'bread', 'egg'], stems: ['котлет', 'тефтел', 'фрикад'] },
+  { id: 'nuggets', label: 'Наггетсы', emoji: '🍗', sector: 'dish', parts: ['chicken', 'bread'], stems: ['наггетс', 'нагетс'] },
+  { id: 'blini', label: 'Блины', emoji: '🥞', sector: 'dish', parts: ['bread', 'egg', 'milk'], stems: ['блин', 'олад', 'панкейк'] },
+  { id: 'syrniki', label: 'Сырники', emoji: '🥞', sector: 'dish', parts: ['cottage', 'egg', 'bread'], stems: ['сырник'] },
+  { id: 'casserole', label: 'Запеканка', emoji: '🥧', sector: 'dish', parts: ['cottage', 'egg', 'semolina'], stems: ['запеканк'] },
+  { id: 'pizza', label: 'Пицца', emoji: '🍕', sector: 'dish', parts: ['bread', 'cheese', 'tomato'], stems: ['пицц'] },
+  { id: 'hotdog', label: 'Хот-дог', emoji: '🌭', sector: 'dish', parts: ['bread', 'sausage'], stems: ['хотдог', 'хот-дог'] },
+  { id: 'burger', label: 'Бургер', emoji: '🍔', sector: 'dish', parts: ['bread', 'beef', 'cheese', 'tomato'], stems: ['бургер', 'гамбург', 'чизбург'] },
+  { id: 'borscht', label: 'Борщ', emoji: '🍲', sector: 'dish', parts: ['beet', 'cabbage', 'potato', 'carrot', 'beef'], stems: ['борщ'] },
+  { id: 'shchi', label: 'Щи', emoji: '🍲', sector: 'dish', parts: ['cabbage', 'potato', 'carrot', 'beef'], stems: ['щи$'] },
+  { id: 'plov', label: 'Плов', emoji: '🍛', sector: 'dish', parts: ['rice', 'beef', 'carrot'], stems: ['плов'] },
+  { id: 'goulash', label: 'Гуляш', emoji: '🍛', sector: 'dish', parts: ['beef', 'pepper', 'tomato', 'potato'], stems: ['гуляш'] },
+  { id: 'olivier', label: 'Оливье', emoji: '🥗', sector: 'dish', parts: ['potato', 'carrot', 'egg', 'peas', 'sausage', 'cucumber'], stems: ['оливье'] },
+  { id: 'vinegret', label: 'Винегрет', emoji: '🥗', sector: 'dish', parts: ['beet', 'potato', 'carrot', 'peas', 'cucumber'], stems: ['винегрет'] },
+  { id: 'shawarma', label: 'Шаурма', emoji: '🌯', sector: 'dish', parts: ['bread', 'chicken', 'cabbage', 'tomato'], stems: ['шаурм', 'шаверм'] },
+  { id: 'sushi', label: 'Суши, роллы', emoji: '🍣', sector: 'dish', parts: ['rice', 'fish'], stems: ['суши', 'ролл'] },
+  { id: 'lecho', label: 'Лечо', emoji: '🫑', sector: 'dish', parts: ['pepper', 'tomato'], stems: ['лечо'] },
+  { id: 'smoothie', label: 'Смузи', emoji: '🥤', sector: 'dish', parts: ['banana', 'strawberry', 'kefir'], stems: ['смузи'] },
+  { id: 'cheesecake', label: 'Чизкейк', emoji: '🍰', sector: 'dish', parts: ['cottage', 'cookies', 'egg'], stems: ['чизкейк'] },
 ];
 
-// Блюда раскладываются на продукты. Ключ: начало слова.
-export const DISHES = [
-  { stems: ['борщ'], label: 'Борщ', foods: ['beet', 'cabbage', 'potato', 'carrot', 'beef'] },
-  { stems: ['щи'], label: 'Щи', foods: ['cabbage', 'potato', 'carrot', 'beef'] },
-  { stems: ['блин', 'олад', 'панкейк'], label: 'Блины', foods: ['bread', 'egg', 'milk'] },
-  { stems: ['сырник'], label: 'Сырники', foods: ['cottage', 'egg', 'bread'] },
-  { stems: ['запеканк'], label: 'Запеканка', foods: ['cottage', 'egg', 'semolina'] },
-  { stems: ['пицц'], label: 'Пицца', foods: ['bread', 'cheese', 'tomato'] },
-  { stems: ['пельмен', 'варени'], label: 'Пельмени', foods: ['bread', 'beef'] },
-  { stems: ['котлет', 'тефтел', 'фрикад'], label: 'Котлеты', foods: ['beef', 'bread', 'egg'] },
-  { stems: ['оливье'], label: 'Оливье', foods: ['potato', 'carrot', 'egg', 'peas', 'sausage', 'cucumber'] },
-  { stems: ['винегрет'], label: 'Винегрет', foods: ['beet', 'potato', 'carrot', 'peas', 'cucumber'] },
-  { stems: ['бургер', 'гамбург', 'чизбург'], label: 'Бургер', foods: ['bread', 'beef', 'cheese', 'tomato'] },
-  { stems: ['шаурм'], label: 'Шаурма', foods: ['bread', 'chicken', 'cabbage', 'tomato'] },
-  { stems: ['суши', 'ролл'], label: 'Суши', foods: ['rice', 'fish'] },
-  { stems: ['плов'], label: 'Плов', foods: ['rice', 'beef', 'carrot'] },
-  { stems: ['гуляш'], label: 'Гуляш', foods: ['beef', 'pepper', 'tomato', 'potato'] },
-  { stems: ['лечо'], label: 'Лечо', foods: ['pepper', 'tomato'] },
-  { stems: ['бульон', 'суп'], label: 'Суп', generic: true, foods: ['chicken', 'carrot', 'potato'] },
-  { stems: ['каш'], label: 'Каша', generic: true, foods: ['oats', 'milk'] },
-  { stems: ['смузи'], label: 'Смузи', foods: ['banana', 'strawberry', 'kefir'] },
-  { stems: ['чизкейк'], label: 'Чизкейк', foods: ['cottage', 'cookies', 'egg'] },
-  { stems: ['бутерброд'], label: 'Бутерброд', generic: true, foods: ['bread', 'cheese'] },
-];
+// Базовый быстрый выбор: то, что чаще всего ест школьник
+export const BASIC = ['porridge', 'soup', 'sandwich', 'pelmeni', 'pasta', 'sausage', 'omelet', 'egg', 'cutlet', 'chicken',
+  'potato', 'rice', 'buckwheat', 'blini', 'kefir', 'apple', 'banana', 'candy', 'chocolate', 'cookies'];
+
 
 export const FAMILY_EMOJI = { dairy: '🥛', wheat: '🌾', egg: '🥚', nuts: '🥜', cocoa: '🍫', citrus: '🍊', redberry: '🍓', fish: '🐟' };
 
 export const FOOD_BY_ID = Object.fromEntries(FOODS.map((f) => [f.id, f]));
+const DISH_LIST = FOODS.filter((f) => f.sector === 'dish');
 
 export const norm = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е').trim();
 
@@ -133,12 +146,30 @@ export function foodEmoji(id) {
   return FOOD_BY_ID[id]?.emoji || (id.startsWith('fam:') ? FAMILY_EMOJI[id.slice(4)] || '🧺' : '🍽️');
 }
 
+// Блюдо и все его продукты: ['pelmeni'] -> ['pelmeni', 'bread', 'beef']
+export function expandParts(ids) {
+  const out = new Set(ids);
+  for (const id of ids) for (const p of FOOD_BY_ID[id]?.parts || []) out.add(p);
+  return [...out];
+}
+
 export function foodFamilies(id) {
-  return FOOD_BY_ID[id]?.fam || [];
+  const f = FOOD_BY_ID[id];
+  if (!f) return [];
+  if (!f.parts) return f.fam || [];
+  return [...new Set([...(f.fam || []), ...f.parts.flatMap((p) => FOOD_BY_ID[p]?.fam || [])])];
 }
 
 export function foodSector(id) {
   return FOOD_BY_ID[id]?.sector || null;
+}
+
+// Клетки тарелки, которые закрывает продукт или блюдо
+export function plateSectors(id) {
+  const f = FOOD_BY_ID[id];
+  if (!f) return [];
+  if (f.sector !== 'dish') return [f.sector];
+  return [...new Set([...(f.plate ? [f.plate] : []), ...f.parts.map((p) => FOOD_BY_ID[p]?.sector)])];
 }
 
 // Стем 'xxx$' означает слово целиком, остальные — начало слова.
@@ -147,10 +178,10 @@ function stemHit(word, stem) {
 }
 
 // Самый длинный подходящий стем побеждает: «нутелла» — шоколад, а не нут.
-function bestFood(word) {
+function bestFood(word, list = FOODS) {
   let best = null;
   let len = 0;
-  for (const f of FOODS) {
+  for (const f of list) {
     for (const s of f.stems) {
       if (s.length > len && stemHit(word, s)) { best = f; len = s.length; }
     }
@@ -167,16 +198,16 @@ export function parseFreeText(text) {
   const out = [];
   for (const chunk of chunks) {
     const words = chunk.split(' ');
-    const dish = DISHES.find((d) => words.some((w) => d.stems.some((s) => stemHit(w, s))));
+    let dish = null;
+    for (const w of words) dish = dish || bestFood(w, DISH_LIST);
     const foods = [];
     for (const w of words) {
-      if (w.length < 3 || (dish && dish.stems.some((s) => stemHit(w, s)))) continue;
+      if (w.length < 2) continue;
       const f = bestFood(w);
-      if (f && !foods.includes(f.id)) foods.push(f.id);
+      if (f && f !== dish && !foods.includes(f.id)) foods.push(f.id);
     }
     if (dish && !(dish.generic && foods.length)) {
-      const all = [...new Set([...dish.foods, ...foods])];
-      out.push({ text: chunk, kind: 'dish', label: dish.label, foods: all });
+      out.push({ text: chunk, kind: 'dish', label: dish.label, foods: [dish.id, ...foods] });
     } else if (foods.length) {
       out.push({ text: chunk, kind: 'food', foods });
     } else if (chunk.length >= 2) {
@@ -189,7 +220,7 @@ export function parseFreeText(text) {
 // Семейства и сектора тарелки для набора продуктов
 export function expandFamilies(foodIds) {
   const fams = new Set();
-  for (const id of foodIds) for (const f of foodFamilies(id)) fams.add('fam:' + f);
+  for (const id of expandParts(foodIds)) for (const f of foodFamilies(id)) fams.add('fam:' + f);
   return [...fams];
 }
 
@@ -207,7 +238,22 @@ export const FACTORS = [
   { id: 'plants', label: 'Трава, цветы', emoji: '🌼' },
   { id: 'sick', label: 'Простуда', emoji: '🤧' },
   { id: 'meds', label: 'Лекарство', emoji: '💊' },
+  // места еды: ставятся из записи еды, в списке улик не показываются
+  { id: 'school', label: 'Еда в школе', emoji: '🏫', place: true },
+  { id: 'guest', label: 'Еда в гостях', emoji: '🎈', place: true },
+  { id: 'cafe', label: 'Еда в кафе', emoji: '🍴', place: true },
 ];
+
+export const PLACES = [
+  { id: 'home', label: 'Дома', emoji: '🏠' },
+  { id: 'school', label: 'Школа', emoji: '🏫' },
+  { id: 'guest', label: 'В гостях', emoji: '🎈' },
+  { id: 'cafe', label: 'Кафе', emoji: '🍴' },
+];
+export const PLACE_BY_ID = Object.fromEntries(PLACES.map((x) => [x.id, x]));
+
+// Сладкие напитки для быстрого выбора
+export const SWEET_DRINKS = ['soda', 'juice', 'bubbletea', 'icetea', 'milkshake', 'cocoa', 'compote', 'tea'];
 export const FACTOR_BY_ID = Object.fromEntries(FACTORS.map((f) => [f.id, f]));
 
 // Подпись для любого ключа Радара: продукт, семейство или улика

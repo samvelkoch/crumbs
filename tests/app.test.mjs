@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dayKey, fromZoned, toInputValue, fromInputValue, addDays, HOUR } from '../js/dates.js';
-import { parseFreeText } from '../js/foods.js';
+import { parseFreeText, expandParts, expandFamilies, plateSectors } from '../js/foods.js';
 import { analyze, evaluateCase } from '../js/radar.js';
 import { merge, emptyState } from '../js/store.js';
 import { encryptState, decryptBackup, BackupError } from '../js/backup.js';
@@ -24,11 +24,24 @@ test('fromZoned и поле времени переживают переход �
 
 test('свободный ввод: блюда, длинный стем, свои продукты', () => {
   const p = parseFreeText('Борщ со сметаной, нутелла и драконий фрукт');
-  assert.deepEqual(p[0].foods, ['beet', 'cabbage', 'potato', 'carrot', 'beef']);
+  assert.deepEqual(p[0].foods, ['borscht']);
+  assert.deepEqual(expandParts(p[0].foods), ['borscht', 'beet', 'cabbage', 'potato', 'carrot', 'beef']);
   assert.deepEqual(p[1].foods, ['sourcream']);
   assert.deepEqual(p[2].foods, ['chocolate']);
   assert.equal(p[3].kind, 'custom');
   assert.deepEqual(parseFreeText('каша гречневая')[0].foods, ['buckwheat']);
+  assert.deepEqual(parseFreeText('пельмени')[0].foods, ['pelmeni']);
+  assert.deepEqual(parseFreeText('омлет')[0].foods, ['omelet']);
+  assert.deepEqual(parseFreeText('варенье')[0].foods, ['jam']);
+  assert.deepEqual(parseFreeText('баббл ти')[0].foods, ['bubbletea']);
+  assert.deepEqual(parseFreeText('бутерброд с сыром').map((x) => x.foods), [['sandwich'], ['cheese']]);
+});
+
+test('блюда: семейства и клетки тарелки берутся из продуктов', () => {
+  assert.deepEqual(expandFamilies(['omelet']).sort(), ['fam:dairy', 'fam:egg']);
+  assert.deepEqual(plateSectors('pelmeni').sort(), ['carb', 'prot']);
+  assert.deepEqual(plateSectors('porridge'), ['carb']);
+  assert.deepEqual(plateSectors('apple'), ['fruit']);
 });
 
 function mk(entries) {
@@ -101,4 +114,18 @@ test('звёзды не зависят от текущего дня, супер-
   const s = { ...emptyState(), entries: mk([{ type: 'meal', ts, foods: ['cucumber', 'chicken', 'rice', 'apple'] }]) };
   assert.equal(plateOf(s.entries).size, 4);
   assert.equal(stars(s), 30);
+});
+
+test('напитки: вода и без сахара в цель, сладкие отдельно и в Радаре', async () => {
+  const { waterOf, sweetOf, stars } = await import('../js/game.js');
+  const { entryKeys } = await import('../js/radar.js');
+  const day = [
+    { type: 'water', n: 1 }, { type: 'water', drink: 'plain', n: 1 },
+    { type: 'water', drink: 'sweet', n: 1, foods: ['bubbletea'] },
+  ].map((e, i) => ({ id: 'w' + i, u: 1, ts: fromZoned(2026, 9, 1, 10 + i, 0), ...e }));
+  assert.equal(waterOf(day), 2);
+  assert.equal(sweetOf(day).length, 1);
+  assert.equal(stars({ entries: day, cases: [] }), 4);
+  assert.deepEqual(entryKeys(day[2]), ['bubbletea', 'fam:dairy']);
+  assert.ok(entryKeys({ type: 'meal', foods: ['soup'], place: 'school' }).includes('f:school'));
 });

@@ -3,18 +3,19 @@ import {
   weekday, humanDay, shortDay, MONTHS, WEEKDAYS, zoned,
 } from './dates.js';
 import {
-  FOODS, SECTORS, FACTORS, FACTOR_BY_ID, foodLabel, foodEmoji, foodFamilies,
-  parseFreeText, itemLabel, itemEmoji,
+  FOODS, SECTORS, FACTORS, FACTOR_BY_ID, BASIC, PLACES, PLACE_BY_ID, SWEET_DRINKS,
+  foodLabel, foodEmoji, foodFamilies, parseFreeText, itemLabel, itemEmoji,
 } from './foods.js';
 import { analyze, evaluateCase, skinScore, ZONES, LEVELS, MAX_LEVEL, FLARE } from './radar.js';
-import { PLATE, WATER_GOAL, byDay, plateOf, waterOf, stars, rankOf, BADGES, earnedBadges, streak } from './game.js';
+import { PLATE, WATER_GOAL, byDay, plateOf, waterOf, sweetOf, isSweet, stars, rankOf, BADGES, earnedBadges, streak } from './game.js';
 import { load, save, flush, requestPersistence, uid, merge, emptyState } from './store.js';
 import { encryptState, decryptBackup, BackupError } from './backup.js';
 import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.js';
 import { contextTip, CHEERS, pick } from './tips.js';
+import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -109,8 +110,19 @@ function toast(text, undo) {
   if (b) b.onclick = () => { t.classList.remove('show'); undo(); };
 }
 
-function say(who, text, mood = 'happy') {
-  ui.speech = { who, text, mood };
+function say(who, text, mood = 'happy', cat = null) {
+  ui.speech = { who, text, mood, cat };
+}
+
+// Копилка мудрости: нажатие на героя достаёт новый совет или факт, сначала ещё не виденные
+function nextWisdom(who) {
+  const seen = new Set(state.wisdom);
+  const pool = WISDOM.filter((w) => w[2] === who);
+  const fresh = pool.filter((w) => !seen.has(w[0]));
+  const from = fresh.length ? fresh : pool;
+  const w = from[Math.floor(Math.random() * from.length)];
+  if (!seen.has(w[0])) state.wisdom.push(w[0]);
+  return w;
 }
 
 function dotsHTML(zones) {
@@ -121,7 +133,8 @@ function entrySummary(e) {
   if (e.type === 'meal') {
     const k = MEAL_BY_ID[e.kind] || MEAL_KINDS[4];
     const foods = e.foods.map(foodLabel).join(', ');
-    return { ico: e.foods[0] ? foodEmoji(e.foods[0]) : k.emoji, title: k.label, desc: [foods, e.note].filter(Boolean).join(' · ') || 'Без продуктов' };
+    const pl = e.place && e.place !== 'home' ? PLACE_BY_ID[e.place] : null;
+    return { ico: e.foods[0] ? foodEmoji(e.foods[0]) : k.emoji, title: k.label + (pl ? ` · ${pl.emoji} ${pl.label}` : ''), desc: [foods, e.note].filter(Boolean).join(' · ') || 'Без продуктов' };
   }
   if (e.type === 'skin') {
     const z = ZONES.map((x) => `${x.label} ${LEVELS[e.zones[x.id] ?? 0].toLowerCase()}`).join(', ');
@@ -130,7 +143,8 @@ function entrySummary(e) {
   if (e.type === 'factor') {
     return { ico: FACTOR_BY_ID[e.factors[0]]?.emoji || '🧴', title: 'Улика', desc: [e.factors.map((f) => FACTOR_BY_ID[f]?.label || f).join(', '), e.note].filter(Boolean).join(' · ') };
   }
-  return { ico: '💧', title: 'Вода', desc: `${e.n || 1} стакан` };
+  if (isSweet(e)) return { ico: foodEmoji(e.foods?.[0] || 'soda'), title: 'Сладкий напиток', desc: (e.foods || []).map(foodLabel).join(', ') || 'Напиток' };
+  return { ico: e.drink === 'plain' ? '🍵' : '💧', title: e.drink === 'plain' ? 'Напиток без сахара' : 'Вода', desc: `${e.n || 1} стакан` };
 }
 
 function entryRow(e) {
@@ -161,9 +175,28 @@ function plateSVG(set, size = 116) {
     ${emo}</svg>`;
 }
 
-function glassSVG(full) {
-  return `<svg viewBox="0 0 38 46" aria-hidden="true"><path d="M5,4 H33 L29,42 H9 Z" fill="${full ? '#bae6fd' : '#fff'}" stroke="${full ? '#0ea5e9' : '#d6cfe0'}" stroke-width="2.5" stroke-linejoin="round"/>
-    ${full ? '<path d="M7.5,16 H30.5 L28.5,40 H9.5 Z" fill="#38bdf8"/><circle cx="15" cy="24" r="2" fill="#e0f2fe"/>' : ''}</svg>`;
+function glassSVG(full, plain = false) {
+  const [light, mid, edge] = plain ? ['#fde68a', '#f59e0b', '#d97706'] : ['#bae6fd', '#38bdf8', '#0ea5e9'];
+  return `<svg viewBox="0 0 38 46" aria-hidden="true"><path d="M5,4 H33 L29,42 H9 Z" fill="${full ? light : '#fff'}" stroke="${full ? edge : '#d6cfe0'}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${full ? `<path d="M7.5,16 H30.5 L28.5,40 H9.5 Z" fill="${mid}"/><circle cx="15" cy="24" r="2" fill="#fff" opacity=".6"/>` : ''}</svg>`;
+}
+
+// Карточка «Напитки дня»: вода и без сахара идут в цель, сладкие отдельно
+function drinksCard(list) {
+  const glasses = list.filter((e) => e.type === 'water' && !isSweet(e)).flatMap((e) => Array(e.n || 1).fill(e.drink === 'plain'));
+  const n = glasses.length;
+  const sweet = sweetOf(list);
+  return `<div class="card drinks">
+      <h3 style="text-align:center">Напитки дня</h3>
+      <div class="glasses">${Array.from({ length: Math.max(WATER_GOAL, n) }, (_, i) => `<button type="button" class="glass" data-action="${i < n ? 'water-remove' : 'water-add'}" aria-label="${i < n ? 'Убрать стакан' : 'Добавить стакан воды'}">${glassSVG(i < n, glasses[i])}</button>`).join('')}</div>
+      <div class="water-count">${Math.min(n, WATER_GOAL)} из ${WATER_GOAL}${n > WATER_GOAL ? ` (+${n - WATER_GOAL})` : ''}</div>
+      <div class="drink-btns">
+        <button type="button" class="chip small" data-action="water-add">💧 Вода</button>
+        <button type="button" class="chip small" data-action="water-add" data-drink="plain">🍵 Без сахара</button>
+        <button type="button" class="chip small" data-action="sweet">🧋 Сладкое</button>
+      </div>
+      ${sweet.length ? `<div class="sweet-list"><span class="small muted">Сладкие:</span> ${sweet.map((e) => `<button type="button" class="chip small" data-action="sweet-remove" data-id="${esc(e.id)}" aria-label="Убрать ${esc(foodLabel(e.foods?.[0] || 'soda'))}">${foodEmoji(e.foods?.[0] || 'soda')} ${esc(foodLabel(e.foods?.[0] || 'soda'))} <span class="x">×</span></button>`).join('')}</div>` : '<div class="small muted center">Чай, компот и морс без сахара тоже в цель.</div>'}
+    </div>`;
 }
 
 // ---------------------------------------------------------------- рендер
@@ -187,7 +220,7 @@ function renderTop() {
   const name = state.profile.name ? `Сыщик ${esc(state.profile.name)}` : 'Агентство Медка и Пуси';
   return `<header class="topbar">
     <div class="brand"><div class="brand-badge" aria-hidden="true">🔍</div>
-      <div><h1>Пищевой Детектив</h1><div class="sub">${name} · ${rank.emoji} ${esc(rank.title)}</div></div></div>
+      <div><h1>Агентство Медка и Пуси</h1><div class="sub">${name} · ${rank.emoji} ${esc(rank.title)}</div></div></div>
     <button type="button" class="stars-chip" data-action="go-awards" aria-label="Звёзды: ${total}">⭐ ${total}</button>
   </header>`;
 }
@@ -195,8 +228,8 @@ function renderTop() {
 function renderOnboard() {
   return `<div class="onboard">
     <div class="stage">
-      <div class="bubble" style="--tail:48%"><span class="who">Медок и Пуся</span>Привет! Мы агентство пищевых детективов. Будем вместе записывать еду и следить, как себя чувствует кожа. А Радар поищет следы.</div>
-      <div class="mascots"><div class="mascot-btn">${medokSVG('cheer', 120)}<span class="name">Медок</span></div><div class="mascot-btn">${pusyaSVG('cheer', 120)}<span class="name">Пуся</span></div></div>
+      <div class="bubble" style="--tail:48%"><span class="who">Медок и Пуся</span>Привет! Мы Медок и Пуся, а это наше агентство. Будем вместе записывать, что было на тарелке и как себя чувствует кожа. А Радар поможет найти, что с чем связано.</div>
+      <div class="mascots"><div class="mascot-btn">${medokSVG('cheer', 102)}<span class="name">Медок</span></div><div class="mascot-btn">${pusyaSVG('cheer', 120)}<span class="name">Пуся</span></div></div>
     </div>
     <div class="card" style="display:grid;gap:12px;text-align:left">
       <div class="field"><label for="obName">Как зовут сыщика?</label>
@@ -227,14 +260,15 @@ function renderToday() {
   const st = streak(new Set(days.keys()), t);
   const lastSkin = skins[skins.length - 1];
   const active = state.cases.find((c) => !c.closed);
-  const timeline = list.filter((e) => e.type !== 'water').slice().reverse();
+  const timeline = list.filter((e) => e.type !== 'water' || isSweet(e)).slice().reverse();
 
   return `
   ${state.profile.demo ? `<div class="banner"><span>👀 Сейчас показан пример. Твои записи появятся после того, как его убрать.</span><button class="pill-btn soft" data-action="demo-clear">Убрать</button></div>` : ''}
   <section class="stage" aria-label="Медок и Пуся">
-    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}</span>${esc(sp.text)}</div>
+    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}${sp.cat ? ` · ${WISDOM_CATS[sp.cat].emoji} ${esc(WISDOM_CATS[sp.cat].label)}` : ''}</span>${esc(sp.text)}</div>
+    <div class="tap-hint">Нажми на Медка или Пусю, у них есть что рассказать</div>
     <div class="mascots">
-      <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 116)}<span class="name">Медок</span></button>
+      <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 98)}<span class="name">Медок</span></button>
       <button type="button" class="mascot-btn" data-action="talk" data-who="pusya" aria-label="Поговорить с Пусей">${pusyaSVG(pMood, 116)}<span class="name">Пуся</span></button>
     </div>
   </section>
@@ -260,11 +294,7 @@ function renderToday() {
       ${plateSVG(plate)}
       <div class="plate-legend">${PLATE.map((p) => `<span class="${plate.has(p) ? 'on' : ''}">${SECTORS[p].emoji} ${SECTORS[p].label}</span>`).join('')}</div>
     </div>
-    <div class="card">
-      <h3 style="text-align:center">Вода</h3>
-      <div class="glasses">${Array.from({ length: WATER_GOAL }, (_, i) => `<button type="button" class="glass" data-action="${i < water ? 'water-remove' : 'water-add'}" aria-label="${i < water ? 'Убрать стакан' : 'Добавить стакан'}">${glassSVG(i < water)}</button>`).join('')}</div>
-      <div class="water-count">${water} из ${WATER_GOAL}${water > WATER_GOAL ? ` (+${water - WATER_GOAL})` : ''}</div>
-    </div>
+    ${drinksCard(list)}
   </section>
 
   ${active ? caseCard(active) : ''}
@@ -292,7 +322,7 @@ function renderDiary() {
     const cls = ['day', list.length ? 'has' : '', lv !== null ? 'lv' + lv : '', list.some((e) => e.type === 'meal') ? 'meals' : '', k === t ? 'today' : '', k > t ? 'future' : ''].join(' ');
     cells += `<button type="button" class="${cls}" data-action="pick-day" data-day="${k}" aria-pressed="${k === ui.day}" ${k > t ? 'disabled' : ''} aria-label="${d} ${lv !== null ? LEVELS[lv] : ''}">${d}</button>`;
   }
-  const list = (days.get(ui.day) || []).filter((e) => e.type !== 'water');
+  const list = (days.get(ui.day) || []).filter((e) => e.type !== 'water' || isSweet(e));
   const dayAll = days.get(ui.day) || [];
   const water = waterOf(dayAll);
   const plate = plateOf(dayAll);
@@ -307,13 +337,13 @@ function renderDiary() {
     <div class="legend">${LEVELS.map((l, i) => `<span><i class="dot lv${i}"></i>${l}</span>`).join('')}<span><i class="dot" style="background:#f6f1ea"></i>нет замера</span></div>
   </section>
   <section class="card">
-    <div class="card-head"><h2>${esc(humanDay(ui.day, t))}</h2><span class="hint">🍽️ ${plate.size}/4 · 💧 ${water}</span></div>
+    <div class="card-head"><h2>${esc(humanDay(ui.day, t))}</h2><span class="hint">🍽️ ${plate.size}/4 · 💧 ${water}${sweetOf(dayAll).length ? ` · 🧋 ${sweetOf(dayAll).length}` : ''}</span></div>
     <div class="timeline">${list.length ? list.slice().reverse().map(entryRow).join('') : '<div class="empty">В этот день записей нет.</div>'}</div>
     <div class="chips" style="margin-top:12px">
       <button type="button" class="chip small" data-action="meal">＋ Еда</button>
       <button type="button" class="chip small" data-action="skin">＋ Кожа</button>
       <button type="button" class="chip small" data-action="factor">＋ Улика</button>
-      ${ui.day !== t ? '<button type="button" class="chip small" data-action="water-add">＋ Вода</button>' : ''}
+      ${ui.day !== t ? '<button type="button" class="chip small" data-action="water-add">＋ Вода</button><button type="button" class="chip small" data-action="water-add" data-drink="plain">＋ Без сахара</button><button type="button" class="chip small" data-action="sweet">＋ Сладкое</button>' : ''}
     </div>
   </section>`;
 }
@@ -444,7 +474,18 @@ function renderMore() {
     <div class="rank-line"><span class="big">${rank.emoji}</span><div><h2>${esc(rank.title)}</h2>
       <p class="small muted">${rank.next ? `До звания «${esc(rank.next.title)}» ещё ${rank.toNext} ⭐` : 'Высшее звание агентства!'}</p></div></div>
     <div class="progress"><i style="width:${rank.progress * 100}%"></i></div>
-    <p class="small muted">⭐ 10 за еду и замер кожи, 5 за улику, 2 за стакан воды, 20 за супер-тарелку, 50 за закрытое дело.</p>
+    <p class="small muted">⭐ 10 за еду и замер кожи, 5 за улику, 2 за стакан воды или напитка без сахара, 20 за супер-тарелку, 50 за закрытое дело.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Копилка мудрости</h2><span class="hint">${state.wisdom.length} из ${WISDOM.length}</span></div>
+    <p class="small muted">Каждый раз, когда нажимаешь на Медка или Пусю, в копилку падает новый совет, факт или загадка.</p>
+    <div class="progress"><i style="width:${(state.wisdom.length / WISDOM.length) * 100}%"></i></div>
+    <div class="chips" style="margin-top:10px">${Object.entries(WISDOM_CATS).map(([id, c]) => {
+      const n = WISDOM.filter((w) => w[1] === id).length;
+      const g = WISDOM.filter((w) => w[1] === id && state.wisdom.includes(w[0])).length;
+      return `<button type="button" class="chip small" data-action="wisdom" data-cat="${id}">${c.emoji} ${esc(c.label)} ${g}/${n}</button>`;
+    }).join('')}</div>
   </section>
 
   <section class="card" id="awards">
@@ -528,9 +569,9 @@ function afterSave(e, isNew, kind) {
 // --- еда
 function mealSheet(existing) {
   const ts0 = existing?.ts ?? defaultTs();
-  const st = { kind: existing?.kind || kindByTime(ts0), foods: [...(existing?.foods || [])] };
+  const st = { kind: existing?.kind || kindByTime(ts0), place: existing?.place || 'home', foods: [...(existing?.foods || [])] };
   const freq = frequentFoods();
-  const sectorOrder = ['veg', 'prot', 'carb', 'fruit', 'treat', 'drink'];
+  const sectorOrder = ['dish', 'veg', 'prot', 'carb', 'fruit', 'treat', 'drink'];
   const chip = (id) => `<button type="button" class="chip" data-sa="food" data-id="${esc(id)}" aria-pressed="${st.foods.includes(id)}">${foodEmoji(id)} ${esc(foodLabel(id))}</button>`;
   const cats = sectorOrder.map((s) => `<div><div class="cat-title"><i style="background:${SECTORS[s].color}"></i>${SECTORS[s].label}</div>
     <div class="chips">${FOODS.filter((f) => f.sector === s).map((f) => chip(f.id)).join('')}</div></div>`).join('');
@@ -548,7 +589,7 @@ function mealSheet(existing) {
     if (!v.trim()) { box.innerHTML = ''; return; }
     const parsed = parseFreeText(v);
     box.innerHTML = parsed.map((p, i) => {
-      const what = p.kind === 'dish' ? `${esc(p.label)}: ${p.foods.map((f) => esc(foodLabel(f).toLowerCase())).join(', ')}`
+      const what = p.kind === 'dish' ? `${foodEmoji(p.foods[0])} ${esc(p.label)}${p.foods.length > 1 ? `, ${p.foods.slice(1).map((f) => esc(foodLabel(f).toLowerCase())).join(', ')}` : ''}`
         : p.kind === 'custom' ? `Свой продукт «${esc(p.text)}»` : p.foods.map((f) => `${foodEmoji(f)} ${esc(foodLabel(f))}`).join(', ');
       return `<button type="button" data-sa="parsed" data-i="${i}">＋ ${what}</button>`;
     }).join('') + (parsed.length > 1 ? '<button type="button" data-sa="parsed-all">＋ Добавить всё</button>' : '');
@@ -558,11 +599,13 @@ function mealSheet(existing) {
     title: existing ? 'Изменить запись' : 'Что было на тарелке?',
     body: `
       <div class="seg" role="group" aria-label="Приём пищи">${MEAL_KINDS.map((k) => `<button type="button" data-sa="kind" data-id="${k.id}" aria-pressed="${st.kind === k.id}">${k.emoji} ${k.label}</button>`).join('')}</div>
+      <div class="seg place" role="group" aria-label="Где ели">${PLACES.map((x) => `<button type="button" data-sa="place" data-id="${x.id}" aria-pressed="${st.place === x.id}">${x.emoji} ${x.label}</button>`).join('')}</div>
       <div class="tray" id="tray">${tray()}</div>
       <div class="field"><label for="fText">Написать словами</label>
         <input class="input" id="fText" placeholder="Например: борщ, сырники, нутелла" autocomplete="off" enterkeyhint="done">
         <div class="suggest" id="suggest"></div></div>
       ${freq.length ? `<div><div class="cat-title">⭐ Часто</div><div class="chips">${freq.map(chip).join('')}</div></div>` : ''}
+      <div><div class="cat-title">🍽️ Основное</div><div class="chips">${BASIC.filter((id) => !freq.includes(id)).map(chip).join('')}</div></div>
       ${cats}
       ${timeField(ts0)}
       <div class="field"><label for="fNote">Заметка</label><textarea class="input" id="fNote" placeholder="Например: в гостях, новая марка йогурта">${esc(existing?.note || '')}</textarea></div>`,
@@ -570,6 +613,7 @@ function mealSheet(existing) {
     onInput: (ev) => { if (ev.target.id === 'fText') suggest(); },
     actions: {
       kind: (b) => { st.kind = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="kind"]')) x.setAttribute('aria-pressed', x === b); },
+      place: (b) => { st.place = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="place"]')) x.setAttribute('aria-pressed', x === b); },
       food: (b) => { const id = b.dataset.id; st.foods = st.foods.includes(id) ? st.foods.filter((x) => x !== id) : [...st.foods, id]; sync(); },
       unfood: (b) => { st.foods = st.foods.filter((x) => x !== b.dataset.id); sync(); },
       parsed: (b) => { addFoods(st.parsed[+b.dataset.i].foods); b.remove(); if (!$('#suggest [data-sa="parsed"]')) { $('#fText').value = ''; suggest(); } },
@@ -579,7 +623,7 @@ function mealSheet(existing) {
         const pending = $('#fText').value.trim();
         if (pending) for (const p of parseFreeText(pending)) addFoods(p.foods);
         if (!st.foods.length) { toast('Добавь хотя бы один продукт'); return; }
-        const e = { ...(existing || { id: uid(), type: 'meal' }), kind: st.kind, foods: st.foods, ts: readTime(ts0), note: $('#fNote').value.trim().slice(0, 300) };
+        const e = { ...(existing || { id: uid(), type: 'meal' }), kind: st.kind, place: st.place, foods: st.foods, ts: readTime(ts0), note: $('#fNote').value.trim().slice(0, 300) };
         delete e.demo;
         upsert(e);
         afterSave(e, !existing, 'meal');
@@ -633,7 +677,7 @@ function factorSheet(existing) {
   openSheet({
     title: existing ? 'Изменить улику' : 'Что ещё было?',
     body: `<p class="small muted">Не только еда влияет на кожу. Отметь, что было сегодня необычного.</p>
-      <div class="chips">${FACTORS.map((f) => `<button type="button" class="chip" data-sa="f" data-id="${f.id}" aria-pressed="${sel.includes(f.id)}">${f.emoji} ${esc(f.label)}</button>`).join('')}</div>
+      <div class="chips">${FACTORS.filter((f) => !f.place).map((f) => `<button type="button" class="chip" data-sa="f" data-id="${f.id}" aria-pressed="${sel.includes(f.id)}">${f.emoji} ${esc(f.label)}</button>`).join('')}</div>
       ${timeField(ts0)}
       <div class="field"><label for="fNote">Подробности</label><textarea class="input" id="fNote" placeholder="Например: крем с ромашкой">${esc(existing?.note || '')}</textarea></div>`,
     foot: `${deleteBtn(existing)}<button type="button" class="pill-btn" data-sa="save">Сохранить</button>`,
@@ -651,22 +695,72 @@ function factorSheet(existing) {
   });
 }
 
-function waterAdd() {
-  const e = { id: uid(), type: 'water', ts: defaultTs(), n: 1 };
+function waterAdd(b) {
+  const plain = b?.dataset?.drink === 'plain';
+  const e = { id: uid(), type: 'water', drink: plain ? 'plain' : 'water', ts: defaultTs(), n: 1 };
   upsert(e);
   const n = waterOf(byDay(state.entries).get(dayKey(e.ts)));
-  if (ui.tab === 'today') say('pusya', n === WATER_GOAL ? `Шесть стаканов! Значок «Водный агент» у тебя.` : `${pick(CHEERS.water, n)} Уже ${n}.`, n >= WATER_GOAL ? 'cheer' : 'happy');
+  if (ui.tab === 'today') say('pusya', n === WATER_GOAL ? 'Шесть стаканов! Значок «Водный агент» у тебя.' : `${pick(CHEERS[plain ? 'plain' : 'water'], n)} Уже ${n} из ${WATER_GOAL}.`, n >= WATER_GOAL ? 'cheer' : 'happy');
   commit();
-  toast(`Вода: ${n} ${plural(n, 'стакан', 'стакана', 'стаканов')}`, () => { remove(e.id); commit(); });
+  toast(`${plain ? 'Без сахара' : 'Вода'}: ${n} из ${WATER_GOAL}`, () => { remove(e.id); commit(); });
 }
 
 function waterRemove() {
   const k = ui.tab === 'diary' ? ui.day : today();
-  const last = (byDay(state.entries).get(k) || []).filter((e) => e.type === 'water').pop();
+  const last = (byDay(state.entries).get(k) || []).filter((e) => e.type === 'water' && !isSweet(e)).pop();
   if (!last) return;
   remove(last.id);
   commit();
   toast('Стакан убран', () => { delete state.tombstones[last.id]; upsert(last); commit(); });
+}
+
+function wisdomSheet(cat) {
+  const c = WISDOM_CATS[cat];
+  const seen = new Set(state.wisdom);
+  const list = WISDOM.filter((w) => w[1] === cat);
+  const got = list.filter((w) => seen.has(w[0]));
+  openSheet({
+    title: `${c.emoji} ${c.label}`,
+    body: `<p class="small muted">Собрано ${got.length} из ${list.length}. Остальные расскажут Медок и Пуся, если на них нажимать.</p>
+      ${got.length ? got.map((w) => `<div class="wisdom-item"><span class="who">${w[2] === 'medok' ? '🦔' : '🐒'}</span><span>${esc(w[3])}</span></div>`).join('') : '<div class="empty">Пока пусто. Нажми на героя на главной.</div>'}`,
+    foot: '<button type="button" class="pill-btn" data-sa="close">Понятно</button>',
+    actions: { close: () => closeSheet() },
+  });
+}
+
+// Сладкий напиток: без минусов, просто ещё одна улика для Радара
+function sweetSheet(existing) {
+  const ts0 = existing?.ts ?? defaultTs();
+  let sel = existing?.foods?.[0] || null;
+  openSheet({
+    title: existing ? 'Изменить напиток' : 'Какой сладкий напиток?',
+    body: `<p class="small muted">Это не идёт в стаканы дня, но помогает Радару: в сладких напитках бывают красители и цитрус.</p>
+      <div class="chips">${SWEET_DRINKS.map((id) => `<button type="button" class="chip" data-sa="d" data-id="${id}" aria-pressed="${sel === id}">${foodEmoji(id)} ${esc(id === 'tea' ? 'Сладкий чай' : id === 'compote' ? 'Сладкий компот, морс' : foodLabel(id))}</button>`).join('')}</div>
+      ${timeField(ts0)}`,
+    foot: `${deleteBtn(existing)}<button type="button" class="pill-btn" data-sa="save">Записать</button>`,
+    actions: {
+      d: (b) => { sel = b.dataset.id; for (const x of sheet().querySelectorAll('[data-sa="d"]')) x.setAttribute('aria-pressed', x === b); },
+      delete: () => afterDelete(remove(existing.id)),
+      save: () => {
+        if (!sel) { toast('Выбери напиток'); return; }
+        const e = { ...(existing || { id: uid(), type: 'water', drink: 'sweet', n: 1 }), foods: [sel], ts: readTime(ts0) };
+        delete e.demo;
+        upsert(e);
+        closeSheet();
+        if (!existing) say('medok', pick(CHEERS.sweet, e.ts / 1000), 'calm');
+        commit();
+        toast(existing ? 'Изменения сохранены' : 'Напиток записан', existing ? undefined : () => { remove(e.id); commit(); });
+      },
+    },
+  });
+}
+
+function sweetRemove(b) {
+  const e = state.entries.find((x) => x.id === b.dataset.id);
+  if (!e) return;
+  remove(e.id);
+  commit();
+  toast('Напиток убран', () => { delete state.tombstones[e.id]; upsert(e); commit(); });
 }
 
 function editEntry(id) {
@@ -675,6 +769,7 @@ function editEntry(id) {
   if (e.type === 'meal') mealSheet(e);
   else if (e.type === 'skin') skinSheet(e);
   else if (e.type === 'factor') factorSheet(e);
+  else if (isSweet(e)) sweetSheet(e);
 }
 
 // --- дела
@@ -891,12 +986,12 @@ function openReport(n) {
   for (let k = t; k >= from; k = addDays(k, -1)) {
     const l = days.get(k);
     if (!l) continue;
-    const meals = l.filter((e) => e.type === 'meal').map((e) => `<b>${timeStr(e.ts)}</b> ${esc(e.foods.map(foodLabel).join(', '))}${e.note ? ` <i>(${esc(e.note)})</i>` : ''}`).join('<br>');
+    const meals = l.filter((e) => e.type === 'meal' || isSweet(e)).map((e) => `<b>${timeStr(e.ts)}</b> ${e.place && e.place !== 'home' ? `${esc(PLACE_BY_ID[e.place]?.label || '')}: ` : ''}${esc(e.foods.map(foodLabel).join(', '))}${e.note ? ` <i>(${esc(e.note)})</i>` : ''}`).join('<br>');
     const factors = l.filter((e) => e.type === 'factor').map((e) => esc(e.factors.map((f) => FACTOR_BY_ID[f]?.label || f).join(', ') + (e.note ? ` (${e.note})` : ''))).join('<br>');
     const sk = l.filter((e) => e.type === 'skin');
     const mx = (z) => (sk.length ? Math.max(...sk.map((e) => e.zones[z] ?? 0)) : '');
     const notes = sk.map((e) => [e.itch ? 'зуд' : '', e.note].filter(Boolean).join(', ')).filter(Boolean).map(esc).join('; ');
-    rows += `<tr><td>${shortDay(k)}</td><td>${meals}</td><td>${factors}</td><td class="num">${mx('face')}</td><td class="num">${mx('neck')}</td><td class="num">${mx('hands')}</td><td>${notes}</td><td class="num">${waterOf(l)}</td></tr>`;
+    rows += `<tr><td>${shortDay(k)}</td><td>${meals}</td><td>${factors}</td><td class="num">${mx('face')}</td><td class="num">${mx('neck')}</td><td class="num">${mx('hands')}</td><td>${notes}</td><td class="num">${waterOf(l)}${sweetOf(l).length ? ` +${sweetOf(l).length} сл.` : ''}</td></tr>`;
   }
   const el = document.createElement('div');
   el.className = 'report';
@@ -918,7 +1013,7 @@ function openReport(n) {
     ${a.green.length ? `<p><b>Без видимой связи:</b> ${a.green.map((g) => esc(itemLabel(g.key))).join(', ')}.</p>` : ''}
     <h2>По дням</h2>
     <table><thead><tr><th>Дата</th><th>Еда</th><th>Другие факторы</th><th>Лицо</th><th>Шея</th><th>Руки</th><th>Заметки</th><th>Вода</th></tr></thead><tbody>${rows || '<tr><td colspan="8">Нет записей</td></tr>'}</tbody></table>
-    <p class="disclaimer">Сформировано в приложении «Пищевой Детектив» ${shortDay(t)} ${t.slice(0, 4)}. Баллы кожи — максимальные за день.</p>
+    <p class="disclaimer">Сформировано в приложении «Агентство Медка и Пуси» ${shortDay(t)} ${t.slice(0, 4)}. Баллы кожи — максимальные за день.</p>
   </div>`;
   el.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-r]');
@@ -942,13 +1037,23 @@ const ACTIONS = {
   },
   'water-add': waterAdd,
   'water-remove': waterRemove,
+  sweet: () => sweetSheet(),
+  wisdom: (b) => wisdomSheet(b.dataset.cat),
+  'sweet-remove': sweetRemove,
   edit: (b) => editEntry(b.dataset.id),
   talk: (b) => {
     const who = b.dataset.who;
     ui.seed += 7;
-    let [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, ui.seed);
-    for (let i = 0; w !== who && i < 12; i++) [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, (ui.seed += 1));
-    say(who, text, mood);
+    // каждая пятая реплика про само приложение, остальные из копилки мудрости
+    if (ui.seed % 5 === 0) {
+      let [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, ui.seed);
+      for (let i = 0; w !== who && i < 12; i++) [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, (ui.seed += 1));
+      say(who, text, mood);
+    } else {
+      const [, cat, , text] = nextWisdom(who);
+      say(who, text, cat === 'riddles' || cat === 'facts' ? 'think' : who === 'medok' ? 'calm' : 'happy', cat);
+      save(state);
+    }
     render();
     const svg = document.querySelector(`[data-who="${who}"] .mascot`);
     svg?.classList.add('wiggle');

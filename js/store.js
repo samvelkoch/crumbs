@@ -13,6 +13,7 @@ export function emptyState() {
     cases: [],
     tombstones: {}, // id -> когда удалено, нужно для слияния бэкапов с двух устройств
     seenBadges: [],
+    wisdom: [], // id собранных советов из копилки
   };
 }
 
@@ -59,6 +60,7 @@ function normalize(s) {
     cases: Array.isArray(s.cases) ? s.cases : [],
     tombstones: s.tombstones && typeof s.tombstones === 'object' ? s.tombstones : {},
     seenBadges: Array.isArray(s.seenBadges) ? s.seenBadges : [],
+    wisdom: Array.isArray(s.wisdom) ? s.wisdom : [],
   };
 }
 
@@ -142,5 +144,6 @@ export function merge(local, incoming) {
     cases: pick(a.cases, b.cases),
     tombstones: tomb,
     seenBadges: [...new Set([...a.seenBadges, ...b.seenBadges])],
+    wisdom: [...new Set([...(a.wisdom || []), ...(b.wisdom || [])])],
   };
 }
