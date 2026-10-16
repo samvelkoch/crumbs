@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕵️‍♀️ Пищевой Детектив: Медок и Пуся</title>
+  <style>
+    :root {
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #8b5cf6;
+      --primary-dark: #7c3aed;
+      --secondary: #ec4899;
+      --accent: #f59e0b;
+      --good: #10b981;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body {
+      background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 16px;
+    }
+    .container { max-width: 1120px; margin: 0 auto; display: grid; gap: 18px; }
+
+    /* 1. Верхняя шапка */
+    .hero-bar {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 16px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.15);
+      border: 3px solid #ffffff;
+    }
+    .hero-title { display: flex; align-items: center; gap: 14px; }
+    .hero-icon {
+      font-size: 2.1rem;
+      background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: inset 0 2px 6px rgba(139, 92, 246, 0.12);
+      flex-shrink: 0;
+    }
+    h1 { font-size: 1.38rem; font-weight: 800; color: #4c1d95; line-height: 1.2; }
+    .subtitle { font-size: 0.88rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+    .stats-badges { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .star-pill {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #f59e0b;
+      color: #92400e;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);
+    }
+    .rank-pill {
+      background: #ede9fe;
+      color: #6d28d9;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    /* 2. Горизонтальный баннер с Медком и Пусей */
+    .mascot-banner {
+      background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+      border-radius: 22px;
+      padding: 18px 22px;
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.14);
+      border: 3px solid #ffffff;
+      display: flex;
+      align-items: stretch;
+      gap: 22px;
+    }
+    @media (max-width: 820px) {
+      .mascot-banner { flex-direction: column; align-items: center; text-align: center; }
+    }
+
+    .plush-window-stage {
+      background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 68%, #f8fafc 68%, #ffffff 100%);
+      border: 2px solid #cbd5e1;
+      border-radius: 20px;
+      padding: 10px 16px 8px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      min-width: 280px;
+      position: relative;
+      box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.06);
+      flex-shrink: 0;
+    }
+    .plush-card {
+      cursor: pointer;
+      text-align: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      user-select: none;
+    }
+    .plush-card:hover { transform: translateY(-5px) scale(1.03); }
+    .plush-name-badge {
+      display: inline-block;
+      background: #ffffff;
+      border: 2px solid #ddd6fe;
+      color: #4c1d95;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-top: 2px;
+      box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12);
+    }
+    .plush-card.active-pet .plush-name-badge {
+      background: #8b5cf6;
+      color: #ffffff;
+      border-color: #7c3aed;
+    }
+
+    /* Широкое облачко диалога */
+    .speech-wide {
+      flex: 1;
+      background: #f3e8ff;
+      border: 2px solid #c084fc;
+      border-radius: 20px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .speech-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .speech-speaker {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #6d28d9;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .speech-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #7c3aed;
+      border: 1px solid #d8b4fe;
+    }
+    .speech-text {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1.45;
+    }
+    .pet-buttons-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    @media (max-width: 820px) {
+      .pet-buttons-row { justify-content: center; }
+    }
+    .pet-switch-btn {
+      background: #ffffff;
+      border: 2px solid #d8b4fe;
+      color: #5b21b6;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.81rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .pet-switch-btn:hover { background: #ede9fe; }
+    .pet-switch-btn.active {
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      color: #ffffff;
+      border-color: transparent;
+      box-shadow: 0 4px 10px rgba(139, 92, 246, 0.25);
+    }
+    .pet-tip-btn {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      color: #92400e;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.81rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.15s;
+      margin-left: auto;
+    }
+    @media (max-width: 820px) { .pet-tip-btn { margin-left: 0; } }
+    .pet-tip-btn:hover { background: #fde68a; transform: translateY(-1px); }
+
+    /* 3. Виджет "Баланс дня: Супер-тарелка и Вода" */
+    .balance-strip {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 18px;
+    }
+    @media (max-width: 860px) { .balance-strip { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.85);
+    }
+    h2 {
+      font-size: 1.14rem;
+      font-weight: 800;
+      color: #3b0764;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .plate-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+    @media (max-width: 580px) { .plate-grid { grid-template-columns: repeat(2, 1fr); } }
+    .plate-sector {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 12px 10px;
+      text-align: center;
+      transition: 0.25s;
+    }
+    .plate-sector.filled {
+      background: #ecfdf5;
+      border: 2px solid #10b981;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+    }
+    .plate-sector .sec-icon { font-size: 1.65rem; display: block; margin-bottom: 4px; }
+    .plate-sector .sec-title { font-size: 0.82rem; font-weight: 800; color: #1e293b; }
+    .plate-sector .sec-sub { font-size: 0.73rem; font-weight: 700; color: var(--muted); margin-top: 2px; }
+    .plate-sector.filled .sec-sub { color: #047857; }
+
+    /* Трекер воды */
+    .water-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid #bae6fd;
+    }
+    .glasses-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    .glass-btn {
+      width: 42px;
+      height: 48px;
+      border-radius: 12px;
+      border: 2px solid #7dd3fc;
+      background: #ffffff;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+      opacity: 0.45;
+    }
+    .glass-btn.drank {
+      background: #0ea5e9;
+      border-color: #0284c7;
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(14, 165, 233, 0.3);
+    }
+    .glass-btn:hover { opacity: 0.85; transform: scale(1.05); }
+
+    /* 4. Переключатель вкладок (Дневник / Аналитика и Графики) */
+    .mode-tabs {
+      display: flex;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.65);
+      padding: 6px;
+      border-radius: 18px;
+      border: 2px solid #ffffff;
+      width: fit-content;
+    }
+    .mode-tab {
+      padding: 10px 18px;
+      border-radius: 13px;
+      border: none;
+      background: transparent;
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #4c1d95;
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-tab.active {
+      background: var(--card);
+      color: #6d28d9;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.18);
+    }
+
+    /* Основная сетка 2 колонки */
+    .grid-2 { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 18px; }
+    @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Кнопки времени приёма пищи */
+    .meal-selector {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 520px) { .meal-selector { grid-template-columns: repeat(3, 1fr); } }
+    .meal-btn {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 9px 6px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.79rem;
+      transition: 0.2s;
+      color: var(--text);
+    }
+    .meal-btn span { display: block; font-size: 1.35rem; margin-bottom: 2px; }
+    .meal-btn.active {
+      background: #f3e8ff;
+      border-color: var(--primary);
+      color: #5b21b6;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+    }
+
+    /* Категории конструктора тарелки */
+    .cat-group {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 9px 11px;
+      margin-bottom: 8px;
+    }
+    .cat-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #475569;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .quick-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+      user-select: none;
+    }
+    .chip:hover { background: #f1f5f9; transform: scale(1.03); }
+    .chip.selected {
+      background: #ddd6fe;
+      border-color: #7c3aed;
+      color: #4c1d95;
+    }
+    .chip-drink.selected {
+      background: #bae6fd;
+      border-color: #0284c7;
+      color: #075985;
+    }
+
+    input[type="text"], input[type="date"], input[type="time"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      outline: none;
+      transition: 0.2s;
+    }
+    input:focus { border-color: var(--primary); background: #faf5ff; }
+    label { display: block; font-size: 0.84rem; font-weight: 800; color: #475569; margin-bottom: 6px; }
+
+    /* Ползунки зон */
+    .zone-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 11px 14px;
+      margin-bottom: 10px;
+    }
+    .zone-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+    .zone-status {
+      font-size: 0.82rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; height: 8px; }
+
+    /* Кнопки действий */
+    .btn-main {
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      color: #fff;
+      border: none;
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      font-size: 1.02rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(236, 72, 153, 0.3);
+      transition: 0.2s;
+    }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(236, 72, 153, 0.4); }
+    .btn-small {
+      background: #f1f5f9;
+      color: #334155;
+      border: 2px solid #cbd5e1;
+      padding: 7px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .btn-small:hover { background: #e2e8f0; }
+
+    /* Монитор состояния зон */
+    .character-stage {
+      background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+      border-radius: 18px;
+      padding: 14px;
+      text-align: center;
+      border: 2px dashed #c084fc;
+      margin-bottom: 16px;
+    }
+    .body-zones-visual {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .zone-avatar-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px 8px;
+      border: 3px solid #10b981;
+      transition: 0.25s;
+    }
+    .zone-avatar-card .big-emoji { font-size: 1.9rem; display: block; }
+    .zone-avatar-card .zone-name { font-weight: 800; font-size: 0.85rem; margin-top: 4px; }
+    .zone-avatar-card .zone-score { font-size: 0.76rem; font-weight: 700; color: var(--muted); }
+
+    /* Карточки подозреваемых и прогресс-бары */
+    .suspect-card {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .suspect-card:hover { border-color: #c084fc; background: #faf5ff; }
+    .suspect-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .risk-bar-track {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+    .badge-score {
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: #fff;
+      display: inline-block;
+      min-width: 34px;
+      text-align: center;
+    }
+    .bg-good { background: #10b981; }
+    .bg-warn { background: #f59e0b; }
+    .bg-bad { background: #ef4444; }
+
+    /* Карточки добрых альтернатив от Пуси и Медка */
+    .swap-card {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #fde68a;
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .swap-icon {
+      font-size: 1.6rem;
+      background: #ffffff;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* График динамики симптомов (SVG) */
+    .chart-wrap {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 14px;
+      position: relative;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 999px; display: inline-block; }
+
+    /* Таблица истории */
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; font-weight: 800; }
+    .food-pill {
+      display: inline-block;
+      background: #f3e8ff;
+      color: #5b21b6;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.77rem;
+      margin: 2px;
+      cursor: pointer;
+    }
+    .drink-pill {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.77rem;
+      margin: 2px;
+      cursor: pointer;
+    }
+
+    /* Всплывашка */
+    #confettiToast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #4c1d95;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 18px;
+      font-weight: 800;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      transform: translateY(150%);
+      transition: 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 999;
+    }
+    #confettiToast.show { transform: translateY(0); }
+
+    /* Модальное окно сброса */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(30, 41, 59, 0.55);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: #fff;
+      border-radius: 22px;
+      max-width: 380px;
+      width: 100%;
+      padding: 22px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    @keyframes hop {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .bounce-now { animation: hop 0.45s ease 2; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 1. Верхняя шапка -->
+  <div class="hero-bar">
+    <div class="hero-title">
+      <div class="hero-icon">🕵️‍♀️</div>
+      <div>
+        <h1>Пищевой Детектив: Медок и Пуся</h1>
+        <div class="subtitle">Собирай сбалансированную тарелку и вычисляй, на что реагирует кожа на лице, шее и руках ✨</div>
+      </div>
+    </div>
+    <div class="stats-badges">
+      <div class="star-pill">⭐ <span id="starCount">0</span> звёзд</div>
+      <div class="rank-pill" id="detectiveRank">🌱 Стажёр агентства</div>
+      <button type="button" class="btn-small" onclick="exportCSV()">📥 Скачать CSV</button>
+      <button type="button" class="btn-small" onclick="openResetModal()">🔄 Сброс</button>
+    </div>
+  </div>
+
+  <!-- 2. Горизонтальный баннер с Медком и Пусей + Умные советы по питанию и воде -->
+  <div class="mascot-banner">
+    <div class="plush-window-stage" id="plushStage">
+      <!-- ЁЖИК МЕДОК -->
+      <div class="plush-card active-pet" id="card-medok" onclick="talkTo('medok')" title="Нажми на ёжика Медка!">
+        <svg width="108" height="106" viewBox="0 0 120 115">
+          <defs>
+            <radialGradient id="noseShine" cx="35%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#525252"/>
+              <stop offset="45%" stop-color="#171717"/>
+              <stop offset="100%" stop-color="#09090b"/>
+            </radialGradient>
+            <linearGradient id="furBase" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#4a443b"/>
+              <stop offset="60%" stop-color="#3a352e"/>
+              <stop offset="100%" stop-color="#292520"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="62" cy="103" rx="44" ry="7" fill="rgba(15,23,42,0.12)"/>
+          <!-- Тканевая бирочка слева внизу -->
+          <path d="M18,92 L6,96 L9,101 L21,96 Z" fill="#cbbba8" stroke="#a89886" stroke-width="1"/>
+          <!-- Высокий пушистый купол иголок -->
+          <path d="M16,84 C10,55 18,16 60,14 C102,16 110,55 104,84 C98,98 22,98 16,84 Z" fill="url(#furBase)"/>
+          <!-- Многослойные ворсинки меланж -->
+          <g stroke="#8c7f6a" stroke-width="2.2" stroke-linecap="round" fill="none">
+            <path d="M22,74 L15,67 M26,60 L18,52 M32,45 L25,36 M42,32 L37,22 M54,24 L52,14 M67,24 L70,14 M79,31 L85,22 M89,44 L96,35 M95,58 L103,50 M98,72 L106,66"/>
+            <path d="M28,68 L22,58 M36,52 L31,42 M48,38 L45,28 M61,35 L61,24 M73,39 L78,29 M84,52 L91,43 M90,67 L98,59"/>
+          </g>
+          <g stroke="#b8a98f" stroke-width="1.8" stroke-linecap="round" fill="none">
+            <path d="M20,80 L13,75 M24,65 L17,59 M30,50 L23,43 M38,37 L33,28 M49,28 L46,19 M60,26 L60,16 M72,28 L76,19 M83,37 L89,29 M92,50 L99,43 M96,65 L104,59 M99,79 L106,74"/>
+            <path d="M33,63 L28,55 M43,48 L39,39 M55,44 L53,34 M67,44 L70,34 M78,49 L83,40 M86,63 L93,55"/>
+            <path d="M27,76 L21,70 M39,58 L35,50 M52,52 L50,44 M64,52 L66,43 M75,57 L80,49 M88,74 L95,68"/>
+          </g>
+          <g stroke="#635949" stroke-width="2" stroke-linecap="round" fill="none">
+            <path d="M35,33 L30,24 M57,30 L56,20 M76,33 L81,24 M46,42 L43,32 M69,42 L73,32 M31,56 L25,48 M87,57 L94,49"/>
+          </g>
+          <!-- Низкая мордочка со складочкой на лбу -->
+          <path d="M33,82 C33,66 45,60 60,60 C75,60 87,66 87,82 C87,96 76,103 60,103 C44,103 33,96 33,82 Z" fill="#bfa995"/>
+          <ellipse cx="60" cy="88" rx="23" ry="14" fill="#cbb7a4"/>
+          <path d="M46,68 Q60,73 74,68" fill="none" stroke="#8c7662" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M50,73 Q60,76 70,73" fill="none" stroke="#9c8672" stroke-width="1.6" stroke-linecap="round"/>
+          <!-- Глазки и большой глянцевый нос -->
+          <circle cx="44" cy="83" r="4.6" fill="#111111"/>
+          <circle cx="42.7" cy="81.5" r="1.4" fill="#ffffff"/>
+          <circle cx="76" cy="83" r="4.6" fill="#111111"/>
+          <circle cx="74.7" cy="81.5" r="1.4" fill="#ffffff"/>
+          <ellipse cx="60" cy="86" rx="9.5" ry="7.2" fill="url(#noseShine)"/>
+          <ellipse cx="57" cy="83.5" rx="3.2" ry="1.8" fill="#ffffff" opacity="0.8"/>
+          <path id="medokMouth" d="M54,96 Q60,99 66,96" fill="none" stroke="#6e5846" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div><span class="plush-name-badge">🦔 Медок</span></div>
+      </div>
+
+      <!-- ОБЕЗЬЯНКА ПУСЯ -->
+      <div class="plush-card active-pet" id="card-pusya" onclick="talkTo('pusya')" title="Нажми на обезьянку Пусю!">
+        <svg width="142" height="150" viewBox="0 0 155 162">
+          <ellipse cx="76" cy="151" rx="48" ry="8" fill="rgba(15,23,42,0.12)"/>
+          <path d="M102,115 Q134,114 144,108" fill="none" stroke="#cbc2b8" stroke-width="10" stroke-linecap="round"/>
+          <path d="M62,116 L51,144" stroke="#6b4228" stroke-width="15" stroke-linecap="round"/>
+          <path d="M90,116 L99,144" stroke="#6b4228" stroke-width="15" stroke-linecap="round"/>
+          <ellipse cx="48" cy="147" rx="13" ry="9.5" fill="#d1c8be" stroke="#b8aea3" stroke-width="1"/>
+          <path d="M46,142 L45,148" stroke="#aca196" stroke-width="1.5" stroke-linecap="round"/>
+          <ellipse cx="102" cy="147" rx="13" ry="9.5" fill="#d1c8be" stroke="#b8aea3" stroke-width="1"/>
+          <path d="M100,142 L101,148" stroke="#aca196" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M56,72 C48,88 46,118 62,124 C76,128 80,128 92,124 C108,118 104,88 96,72 Z" fill="#6b4228"/>
+          <!-- Чёрная бирочка на левом боку -->
+          <polygon points="103,103 111,100 109,113 102,112" fill="#18181b"/>
+          <path d="M54,75 Q24,96 18,118" fill="none" stroke="#6b4228" stroke-width="12.5" stroke-linecap="round"/>
+          <path d="M97,75 Q118,96 112,118" fill="none" stroke="#6b4228" stroke-width="12.5" stroke-linecap="round"/>
+          <ellipse cx="18" cy="122" rx="8.5" ry="10" fill="#d1c8be"/>
+          <ellipse cx="23" cy="120" rx="4" ry="5" fill="#c4bab0"/>
+          <ellipse cx="110" cy="121" rx="8.5" ry="10.5" fill="#d1c8be"/>
+          <ellipse cx="105" cy="119" rx="4" ry="5" fill="#c4bab0"/>
+          <ellipse cx="30" cy="43" rx="10" ry="11.5" fill="#c7beb4"/>
+          <ellipse cx="31" cy="43" rx="6" ry="7" fill="#9c9288"/>
+          <ellipse cx="122" cy="43" rx="10" ry="11.5" fill="#c7beb4"/>
+          <ellipse cx="121" cy="43" rx="6" ry="7" fill="#9c9288"/>
+          <circle cx="76" cy="41" r="35" fill="#6b4228"/>
+          <ellipse cx="63" cy="34" rx="15.5" ry="13.5" fill="#cfc7bd"/>
+          <ellipse cx="89" cy="34" rx="15.5" ry="13.5" fill="#cfc7bd"/>
+          <path d="M68,18 Q76,27 84,18 Z" fill="#6b4228"/>
+          <ellipse cx="76" cy="54" rx="29" ry="19.5" fill="#d8d0c7"/>
+          <ellipse cx="76" cy="52" rx="26" ry="16" fill="#dfd8d0"/>
+          <circle cx="61" cy="35" r="4.3" fill="#141414"/>
+          <circle cx="59.8" cy="33.7" r="1.3" fill="#ffffff"/>
+          <circle cx="91" cy="35" r="4.3" fill="#141414"/>
+          <circle cx="89.8" cy="33.7" r="1.3" fill="#ffffff"/>
+          <path d="M72,46 L70.5,49.5" stroke="#292524" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M80,46 L81.5,49.5" stroke="#292524" stroke-width="2.2" stroke-linecap="round"/>
+          <path id="pusyaMouth" d="M53,57 Q76,70 99,57" fill="none" stroke="#292524" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        <div><span class="plush-name-badge">🐒 Пуся</span></div>
+      </div>
+    </div>
+
+    <!-- Облачко живых дружеских советов -->
+    <div class="speech-wide">
+      <div>
+        <div class="speech-header-row">
+          <div class="speech-speaker" id="speakerTitle">🦔 Медок и 🐒 Пуся на связи:</div>
+          <span class="speech-tag" id="speechCategoryTag">💡 Совет дня</span>
+        </div>
+        <div class="speech-text" id="speechText" style="margin-top: 8px;">
+          «Привет! Давай сегодня соберём классную тарелку: немного овощей для хруста, гарнир для энергии и белок для силы. А если захочется много шоколада — давай лучше обменяем половину на весёлые шалости!»
+        </div>
+      </div>
+      <div class="pet-buttons-row">
+        <button type="button" class="pet-switch-btn active" id="btn-both" onclick="talkTo('both')">🦔+🐒 Вместе</button>
+        <button type="button" class="pet-switch-btn" id="btn-medok" onclick="talkTo('medok')">🦔 Радар Медка</button>
+        <button type="button" class="pet-switch-btn" id="btn-pusya" onclick="talkTo('pusya')">🐒 Идея от Пуси</button>
+        <button type="button" class="pet-tip-btn" onclick="nextFriendlyTip()">🎲 Ещё совет от друзей</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Баланс дня: Конструктор Супер-Тарелки + Счётчик стаканов воды -->
+  <div class="balance-strip">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <h2 style="margin:0;">🍽️ Баланс тарелки сегодня</h2>
+        <span style="font-size:0.8rem; font-weight:800; color:#6d28d9; background:#f3e8ff; padding:4px 10px; border-radius:999px;" id="plateStatusBadge">Собери все 4 элемента за день!</span>
+      </div>
+      <p style="font-size:0.82rem; color:var(--muted); margin-top:4px;">
+        Когда в меню за день есть и овощи, и белок, и гарнир, и чистая вода — у организма максимум энергии, а коже легче оставаться спокойной:
+      </p>
+      <div class="plate-grid">
+        <div class="plate-sector" id="sec-veg">
+          <span class="sec-icon">🥦</span>
+          <div class="sec-title">Овощи и зелень</div>
+          <div class="sec-sub" id="sub-veg">Пока не отмечено</div>
+        </div>
+        <div class="plate-sector" id="sec-prot">
+          <span class="sec-icon">🍗</span>
+          <div class="sec-title">Белок (сила)</div>
+          <div class="sec-sub" id="sub-prot">Пока не отмечено</div>
+        </div>
+        <div class="plate-sector" id="sec-carb">
+          <span class="sec-icon">🍚</span>
+          <div class="sec-title">Гарнир (энергия)</div>
+          <div class="sec-sub" id="sub-carb">Пока не отмечено</div>
+        </div>
+        <div class="plate-sector" id="sec-fruit">
+          <span class="sec-icon">🍏</span>
+          <div class="sec-title">Фрукты и ягоды</div>
+          <div class="sec-sub" id="sub-fruit">Пока не отмечено</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Интерактивный водный баланс -->
+    <div class="card water-box">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h2 style="margin:0; color:#0369a1;">💧 Чистая вода сегодня</h2>
+          <span style="font-weight:900; font-size:0.95rem; color:#0284c7;" id="waterCountLabel">0 / 6 стаканов</span>
+        </div>
+        <p style="font-size:0.8rem; color:#0369a1; margin-top:4px;">
+          Нажимай на стакан каждый раз, когда пьёшь воду. Медок напоминает: вода помогает выводить всё лишнее!
+        </p>
+        <div class="glasses-row" id="glassesRow"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:6px;">
+        <span style="font-size:0.78rem; font-weight:700; color:#0369a1;" id="waterHint">Выпей стакан воды и отметь его!</span>
+        <button type="button" class="btn-small" style="background:#0ea5e9; color:#fff; border:none;" onclick="addWaterGlass()">+1 стакан 💧</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Переключатель режимов: Запись и Аналитика -->
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div class="mode-tabs">
+      <button type="button" class="mode-tab active" id="tab-all" onclick="switchView('all')">📋 Всё вместе (Дневник + Графики)</button>
+      <button type="button" class="mode-tab" id="tab-analytics" onclick="switchView('analytics')">📊 Подробная аналитика с родителями</button>
+    </div>
+    <div style="font-size:0.82rem; font-weight:700; color:#4c1d95;">
+      💡 Нажимай на любой продукт в списке подозреваемых, чтобы увидеть все записи с ним
+    </div>
+  </div>
+
+  <!-- 5. Блок графиков и совместной аналитики -->
+  <div class="grid-2" id="analyticsSection">
+    <!-- Левая карточка аналитики: График динамики симптомов -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+        <h2 style="margin:0;">📈 График реакции кожи (Лицо, Шея, Руки)</h2>
+        <span style="font-size:0.76rem; font-weight:700; color:var(--muted);">Шкала от 0 (чисто) до 10 (сильная реакция)</span>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#ec4899;"></span> Лицо</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Шея</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> Руки</span>
+        </div>
+        <div id="chartContainer" style="width:100%; overflow-x:auto;"></div>
+        <div id="chartPointInfo" style="margin-top:8px; font-size:0.81rem; font-weight:700; color:#4c1d95; background:#f3e8ff; padding:8px 12px; border-radius:10px;">
+          👆 Нажми на любую точку графика, чтобы посмотреть, что было съедено в этот приём пищи.
+        </div>
+      </div>
+
+      <!-- Дружеские идеи замены от Пуси и Медка (если есть триггеры) -->
+      <div style="margin-top: 16px;">
+        <h2>🤝 Идеи от Пуси и Медка: чем заменить триггеры без скуки</h2>
+        <div id="friendlySwapsBox"></div>
+      </div>
+    </div>
+
+    <!-- Правая карточка аналитики: Главные подозреваемые и Зелёный список -->
+    <div class="card" style="display:flex; flex-direction:column; justify-content:space-between; gap:16px;">
+      <div>
+        <h2>🔎 Главные подозреваемые (окно 24 часа)</h2>
+        <p style="font-size: 0.8rem; color: var(--muted); margin-bottom: 10px;">
+          Продукты и напитки, после которых в течение суток фиксировался самый высокий балл зуда или покраснения:
+        </p>
+        <div id="suspectsContainer"></div>
+      </div>
+
+      <div style="border-top: 2px dashed #e2e8f0; padding-top: 14px;">
+        <h2 style="color:#047857; margin-bottom:6px;">🌿 Спокойная зелёная зона</h2>
+        <p style="font-size: 0.79rem; color: var(--muted); margin-bottom: 8px;">
+          Продукты из твоих записей, после которых кожа чувствовала себя отлично (низкий балл реакции):
+        </p>
+        <div id="safeFoodsContainer" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Блок ввода новой записи и оперативного сканера -->
+  <div class="grid-2" id="entrySection">
+    <!-- Левая колонка: Конструктор приёма пищи -->
+    <div class="card">
+      <h2>📝 Добавить приём пищи или замер</h2>
+      <form id="entryForm">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label>📅 Дата</label>
+            <input type="date" id="dateInput" required>
+          </div>
+          <div>
+            <label>⏰ Время</label>
+            <input type="time" id="timeInput" required>
+          </div>
+        </div>
+
+        <label>🍽️ Приём пищи</label>
+        <div class="meal-selector" id="mealSelector">
+          <div class="meal-btn active" data-meal="Завтрак" onclick="selectMeal(this)"><span>🥞</span>Завтрак</div>
+          <div class="meal-btn" data-meal="Обед" onclick="selectMeal(this)"><span>🍲</span>Обед</div>
+          <div class="meal-btn" data-meal="Ужин" onclick="selectMeal(this)"><span>🍝</span>Ужин</div>
+          <div class="meal-btn" data-meal="Перекус" onclick="selectMeal(this)"><span>🍎</span>Перекус</div>
+          <div class="meal-btn" data-meal="Замер" onclick="selectMeal(this)"><span>🔍</span>Замер</div>
+        </div>
+
+        <label>🥗 Собери свою тарелку (нажимай на кнопки или допиши своё):</label>
+        <div id="categorizedFoodBuilder"></div>
+
+        <div style="margin: 10px 0 12px;">
+          <input type="text" id="foodInput" placeholder="Выбранная еда через запятую (например: курица, рис, огурец)...">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label>🥤 Напитки:</label>
+          <div class="quick-picks" id="drinkChips" style="margin-bottom: 8px;"></div>
+          <input type="text" id="drinkInput" placeholder="Например: вода, чай, какао...">
+        </div>
+
+        <label style="margin-bottom: 8px;">🩺 Оценка состояния кожи сейчас (от 0 до 10):</label>
+
+        <!-- Лицо -->
+        <div class="zone-box">
+          <div class="zone-header">
+            <span>😊 Лицо (щёки, веки, вокруг губ)</span>
+            <span class="zone-status" id="status-face">0 — Чисто ✨</span>
+          </div>
+          <input type="range" id="faceInput" min="0" max="10" value="0" oninput="updateZoneUI()">
+        </div>
+
+        <!-- Шея -->
+        <div class="zone-box">
+          <div class="zone-header">
+            <span>🧣 Шея</span>
+            <span class="zone-status" id="status-neck">0 — Чисто ✨</span>
+          </div>
+          <input type="range" id="neckInput" min="0" max="10" value="0" oninput="updateZoneUI()">
+        </div>
+
+        <!-- Руки -->
+        <div class="zone-box">
+          <div class="zone-header">
+            <span>👐 Руки (кисти и сгибы локтей)</span>
+            <span class="zone-status" id="status-hands">0 — Чисто ✨</span>
+          </div>
+          <input type="range" id="handsInput" min="0" max="10" value="0" oninput="updateZoneUI()">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label>💬 Заметка (самочувствие, прогулка, спорт или шалости):</label>
+          <input type="text" id="notesInput" placeholder="Например: ходили гулять, вместо конфеты устроили игру!">
+        </div>
+
+        <button type="submit" class="btn-main">🌟 Сохранить в дневник (+10 звёзд)</button>
+      </form>
+    </div>
+
+    <!-- Правая колонка: Оперативный монитор зон и достижения -->
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div class="card">
+        <h2>📡 Индикатор зон в реальном времени</h2>
+        <div class="character-stage">
+          <div style="font-size: 0.84rem; font-weight: 700; color: #6b21a8;">
+            Двигай ползунки слева — карточки покажут текущий уровень реакции
+          </div>
+          <div class="body-zones-visual">
+            <div class="zone-avatar-card" id="card-face">
+              <span class="big-emoji" id="emoji-face">😄</span>
+              <div class="zone-name">Лицо</div>
+              <div class="zone-score" id="score-face">Уровень: 0/10</div>
+            </div>
+            <div class="zone-avatar-card" id="card-neck">
+              <span class="big-emoji" id="emoji-neck">🦒</span>
+              <div class="zone-name">Шея</div>
+              <div class="zone-score" id="score-neck">Уровень: 0/10</div>
+            </div>
+            <div class="zone-avatar-card" id="card-hands">
+              <span class="big-emoji" id="emoji-hands">🙌</span>
+              <div class="zone-name">Руки</div>
+              <div class="zone-score" id="score-hands">Уровень: 0/10</div>
+            </div>
+          </div>
+        </div>
+
+        <h2>🏅 Достижения команды</h2>
+        <div id="achievementsBox" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+
+      <div class="card" style="background: linear-gradient(135deg, #faf5ff 0%, #fdf2f8 100%);">
+        <h2>💡 Секретное правило тарелки от Медка и Пуси</h2>
+        <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+          Никаких строгих запретов и скучных нотаций! Наш секрет прост:
+        </p>
+        <ul style="margin-top:8px; padding-left:18px; font-size:0.84rem; color:#475569; line-height:1.55;">
+          <li><b>Половина успеха</b> — добавить к обеду или ужину свежий овощ (огурец, морковь или брокколи).</li>
+          <li><b>Энергия надолго</b> — крупа, паста или картофель + белок (рыба, курица, индейка, яйцо).</li>
+          <li><b>Супер-сделка Пуси</b> — если кожа раздражена (балл 5+), устраиваем перерыв от шоколада, лимонада и пачки снеков, а взамен выбираем печёное яблоко, ягоды или весёлую шалость!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Журнал наблюдений -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+      <h2 style="margin:0;">📖 Журнал расследований</h2>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="text" id="searchInput" placeholder="🔎 Фильтр по продукту..." style="max-width: 240px;" oninput="renderAll()">
+        <button type="button" class="btn-small" onclick="clearSearch()">Показать все</button>
+      </div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Дата / Время</th>
+            <th>Тип</th>
+            <th>Еда и напитки</th>
+            <th>Лицо</th>
+            <th>Шея</th>
+            <th>Руки</th>
+            <th>Заметки</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Всплывашка со звёздами -->
+<div id="confettiToast">🎉 Отличная работа! +10 звёзд в копилку детектива!</div>
+
+<!-- Модальное окно сброса -->
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal-card">
+    <div style="font-size: 2.2rem; margin-bottom: 8px;">🦔🐒</div>
+    <h3 style="font-size: 1.15rem; font-weight: 800; color: #4c1d95; margin-bottom: 8px;">Управление журналом</h3>
+    <p style="font-size: 0.88rem; color: var(--muted); margin-bottom: 18px;">
+      Можно полностью очистить журнал, чтобы вести собственные записи с нуля, или вернуть демонстрационный пример с графиками.
+    </p>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button type="button" class="btn-main" style="padding: 10px;" onclick="confirmClearAll()">✨ Очистить журнал и начать с нуля</button>
+      <button type="button" class="btn-small" style="padding: 10px;" onclick="confirmLoadDemo()">📚 Загрузить демо-пример</button>
+      <button type="button" class="btn-small" style="padding: 9px; border-color: transparent;" onclick="closeResetModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'medok_pusya_detective_v3';
+  const WATER_KEY = 'medok_pusya_water_v3';
+
+  // Категории продуктов для привития здоровых привычек ("Конструктор тарелки")
+  const FOOD_CATEGORIES = [
+    {
+      id: 'veg',
+      title: '🥦 Овощи и зелень (хруст и защита)',
+      items: [
+        { label: '🥒 Огурец', val: 'огурец' },
+        { label: '🥦 Брокколи', val: 'брокколи' },
+        { label: '🥕 Морковь', val: 'морковь' },
+        { label: '🥬 Салат / Зелень', val: 'салат' },
+        { label: '🍅 Помидоры', val: 'помидоры' },
+        { label: '🫑 Сладкий перец', val: 'перец' }
+      ]
+    },
+    {
+      id: 'prot',
+      title: '🍗 Белок (сила и рост)',
+      items: [
+        { label: '🍗 Курица', val: 'курица' },
+        { label: '🦃 Индейка', val: 'индейка' },
+        { label: '🐟 Рыба', val: 'рыба' },
+        { label: '🥩 Мясо / Котлета', val: 'мясо' },
+        { label: '🥚 Яйца', val: 'яйца' },
+        { label: '🧀 Сыр', val: 'сыр' },
+        { label: '🥣 Творог', val: 'творог' }
+      ]
+    },
+    {
+      id: 'carb',
+      title: '🍚 Гарнир и злаки (энергия)',
+      items: [
+        { label: '🍚 Рис', val: 'рис' },
+        { label: '🥣 Гречка', val: 'гречка' },
+        { label: '🥣 Овсянка', val: 'овсянка' },
+        { label: '🍝 Паста / Макароны', val: 'паста' },
+        { label: '🥔 Картофель', val: 'картофель' },
+        { label: '🍞 Хлеб / Тост', val: 'пшеница' }
+      ]
+    },
+    {
+      id: 'fruit',
+      title: '🍏 Фрукты и ягоды (витамины)',
+      items: [
+        { label: '🍏 Яблоко', val: 'яблоко' },
+        { label: '🍐 Груша', val: 'груша' },
+        { label: '🍌 Банан', val: 'банан' },
+        { label: '🫐 Голубика', val: 'голубика' },
+        { label: '🍓 Клубника', val: 'клубника' },
+        { label: '🍊 Цитрусовые', val: 'цитрусовые' }
+      ]
+    },
+    {
+      id: 'treats',
+      title: '🍫 Десерты и перекусы (проверяем реакцию)',
+      items: [
+        { label: '🍫 Шоколад', val: 'шоколад' },
+        { label: '🥐 Выпечка / Печенье', val: 'выпечка' },
+        { label: '🍬 Мармелад / Конфеты', val: 'конфеты' },
+        { label: '🥜 Орехи', val: 'орехи' },
+        { label: '🥨 Снеки / Чипсы', val: 'снеки' }
+      ]
+    }
+  ];
+
+  const QUICK_DRINKS = [
+    { label: '💧 Вода', val: 'вода' },
+    { label: '🍵 Чай', val: 'чай' },
+    { label: '🥛 Молоко', val: 'молоко' },
+    { label: '☕ Какао', val: 'какао' },
+    { label: '🧃 Сок', val: 'сок' },
+    { label: '🥤 Лимонад', val: 'лимонад' }
+  ];
+
+  // Словарь полезных и добрых альтернатив от Пуси и Медка
+  const SWAP_SUGGESTIONS = {
+    'шоколад': {
+      icon: '🤸‍♀️',
+      title: 'Вместо шоколада — шалости или печёное яблоко!',
+      desc: 'Пуся предлагает честную сделку: давай устроим коже каникулы от шоколада, а взамен выберем 15 минут весёлых шалостей, настольную игру или сладкую грушу с голубикой.'
+    },
+    'какао': {
+      icon: '🍵',
+      title: 'Альтернатива какао',
+      desc: 'Какао часто усиливает зуд на шее и лице. Медок советует попробовать тёплый ромашковый или фруктовый чай с ложечкой домашнего пюре.'
+    },
+    'лимонад': {
+      icon: '🫐',
+      title: 'Супер-напиток вместо газировки',
+      desc: 'В лимонаде много красителей и сахара. Давай сделаем «коктейль детектива»: чистая вода со льдом, кусочками яблока или ягодами голубики!'
+    },
+    'конфеты': {
+      icon: '🍏',
+      title: 'Обмен конфет на приключение',
+      desc: 'Когда на коже покраснение, лишний сахар мешает ей восстановиться. Давай заменим конфеты на хрустящие яблочные дольки и интересный квест!'
+    },
+    'клубника': {
+      icon: '🍐',
+      title: 'Ягодная рокировка',
+      desc: 'Клубника нередко вызывает реакцию на щеках. Пока кожа успокаивается, её отлично заменят спелая груша, банан или голубика.'
+    },
+    'цитрусовые': {
+      icon: '🍌',
+      title: 'Мягкие фрукты вместо цитрусовых',
+      desc: 'Мандарины и апельсины могут щипать кожу вокруг губ и на кистях рук. Зелёное яблоко или банан намного дружелюбнее к коже!'
+    },
+    'снеки': {
+      icon: '🥒',
+      title: 'Хрустящий челлендж от Медка',
+      desc: 'Если хочется чем-то похрустеть под фильм или игру — нарежь соломкой свежий огурец и морковь. Хрустит ничуть не хуже чипсов!'
+    }
+  };
+
+  // Копилка добрых советов от Медка и Пуси (без занудства)
+  const FRIENDLY_TIPS = [
+    {
+      speaker: '🐒 Пуся предлагает идею:',
+      tag: '🤸‍♀️ Секрет хорошего настроения',
+      text: '«Если сегодня очень тянет на шоколад или конфеты, давай обменяем их на шалости! Подурачиться, потанцевать или сыграть партию в настолку — удовольствия столько же, а кожа скажет спасибо!»'
+    },
+    {
+      speaker: '🦔 Медок делится наблюдением:',
+      tag: '💧 Водный баланс',
+      text: '«Чистая вода — лучший помощник детектива! Когда ты выпиваешь 5–6 стаканов воды за день, организму гораздо проще справляться с любыми аллергенами.»'
+    },
+    {
+      speaker: '🦔 Медок и 🐒 Пуся напоминают:',
+      tag: '🍽️ Правило супер-тарелки',
+      text: '«Самая крутая тарелка — разноцветная: гарнир (рис, гречка или паста) даёт энергию, мясо или рыба — силу, а свежие овощи (огурец, брокколи) помогают коже оставаться чистой!»'
+    },
+    {
+      speaker: '🐒 Пуся шепчет на ушко:',
+      tag: '🥒 Хрустящий перекус',
+      text: '«Когда хочется чем-нибудь похрустеть между уроками и играми, попробуй огуречные кружочки или морковные палочки. Медок сам обожает так хрустеть!»'
+    },
+    {
+      speaker: '🦔 Медок объясняет радар:',
+      tag: '🔎 Как мы ищем триггеры',
+      text: '«Иногда реакция на шее или руках появляется не сразу, а только вечером или на следующее утро. Поэтому наш график смотрит на все продукты за последние 24 часа!»'
+    }
+  ];
+
+  // Демо-данные за 3 дня для наглядного графика и аналитики с первой секунды
+  function getTodayStr(offsetDays = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    return d.toISOString().split('T')[0];
+  }
+
+  const DEMO_DATA = [
+    { id: 101, date: getTodayStr(-2), time: '08:30', mealType: 'Завтрак', foods: ['овсянка', 'банан'], drinks: ['вода', 'чай'], face: 1, neck: 0, hands: 1, notes: 'Спокойное утро, сбалансированный завтрак' },
+    { id: 102, date: getTodayStr(-2), time: '13:30', mealType: 'Обед', foods: ['индейка', 'рис', 'огурец', 'брокколи'], drinks: ['вода'], face: 0, neck: 0, hands: 1, notes: 'Собрали полную супер-тарелку!' },
+    { id: 103, date: getTodayStr(-1), time: '10:00', mealType: 'Завтрак', foods: ['яйца', 'сыр', 'пшеница'], drinks: ['чай'], face: 1, neck: 1, hands: 1, notes: 'Тост с сыром и яйцом' },
+    { id: 104, date: getTodayStr(-1), time: '16:00', mealType: 'Перекус', foods: ['шоколад', 'клубника', 'выпечка'], drinks: ['какао', 'лимонад'], face: 4, neck: 3, hands: 3, notes: 'Было много сладкого на празднике' },
+    { id: 105, date: getTodayStr(-1), time: '20:30', mealType: 'Замер', foods: [], drinks: ['вода'], face: 7, neck: 6, hands: 6, notes: 'Вечером зачесалась шея, сгибы рук и щёки' },
+    { id: 106, date: getTodayStr(0), time: '08:45', mealType: 'Завтрак', foods: ['гречка', 'индейка', 'огурец'], drinks: ['вода'], face: 2, neck: 2, hands: 2, notes: 'Утром заменили сладости на полезный завтрак и шалости!' },
+    { id: 107, date: getTodayStr(0), time: '13:15', mealType: 'Обед', foods: ['курица', 'картофель', 'морковь', 'яблоко'], drinks: ['вода'], face: 1, neck: 1, hands: 1, notes: 'Кожа заметно успокоилась' }
+  ];
+
+  let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if (!entries) {
+    entries = DEMO_DATA;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  }
+
+  let waterState = JSON.parse(localStorage.getItem(WATER_KEY) || 'null');
+  const todayKey = getTodayStr(0);
+  if (!waterState || waterState.date !== todayKey) {
+    waterState = { date: todayKey, glasses: 3 };
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+  }
+
+  let currentMeal = 'Завтрак';
+  let tipIndex = 0;
+
+  // Инициализация категорий продуктов
+  function initFoodBuilder() {
+    const container = document.getElementById('categorizedFoodBuilder');
+    container.innerHTML = FOOD_CATEGORIES.map(cat => `
+      <div class="cat-group">
+        <div class="cat-title"><span>${cat.title}</span></div>
+        <div class="quick-picks">
+          ${cat.items.map(item => `
+            <span class="chip" data-val="${item.val}" onclick="toggleChip(this, 'foodInput', '${item.val}')">${item.label}</span>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('drinkChips').innerHTML = QUICK_DRINKS.map(d =>
+      `<span class="chip chip-drink" data-val="${d.val}" onclick="toggleChip(this, 'drinkInput', '${d.val}')">${d.label}</span>`
+    ).join('');
+  }
+
+  function toggleChip(el, inputId, val) {
+    const input = document.getElementById(inputId);
+    let items = input.value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (items.includes(val)) {
+      items = items.filter(i => i !== val);
+      el.classList.remove('selected');
+    } else {
+      items.push(val);
+      el.classList.add('selected');
+    }
+    input.value = items.join(', ');
+  }
+
+  function selectMeal(btn) {
+    document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMeal = btn.getAttribute('data-meal');
+  }
+
+  // Трекер стаканов воды
+  function renderWaterTracker() {
+    const row = document.getElementById('glassesRow');
+    const count = waterState.glasses;
+    document.getElementById('waterCountLabel').textContent = `${count} / 6 стаканов`;
+
+    let html = '';
+    for (let i = 1; i <= 6; i++) {
+      const drank = i <= count ? 'drank' : '';
+      html += `<button type="button" class="glass-btn ${drank}" onclick="setWaterGlasses(${i})" title="Отметить ${i} ст. воды">💧</button>`;
+    }
+    row.innerHTML = html;
+
+    const hint = document.getElementById('waterHint');
+    if (count === 0) hint.textContent = 'Начни день со стакана чистой воды!';
+    else if (count < 4) hint.textContent = `Хорошее начало! Ещё ${6 - count} ст. до дневной цели.`;
+    else if (count < 6) hint.textContent = 'Отличный водный баланс! Почти у цели ✨';
+    else hint.textContent = 'Супер-гидратация! Медок и Пуся гордятся тобой 🏆';
+  }
+
+  function setWaterGlasses(n) {
+    if (waterState.glasses === n) {
+      waterState.glasses = n - 1;
+    } else {
+      waterState.glasses = n;
+    }
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    renderWaterTracker();
+    updateSmartMascotSpeech();
+  }
+
+  function addWaterGlass() {
+    if (waterState.glasses < 8) {
+      waterState.glasses += 1;
+      localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+      renderWaterTracker();
+      showToast('💧 +1 стакан чистой воды! Отличная привычка!');
+      updateSmartMascotSpeech();
+    }
+  }
+
+  // Проверка баланса тарелки за сегодня
+  function renderPlateBalance() {
+    const today = getTodayStr(0);
+    const todayEntries = entries.filter(e => e.date === today);
+    const eatenToday = new Set();
+    todayEntries.forEach(e => e.foods.forEach(f => eatenToday.add(f)));
+
+    const checkCat = (catId) => {
+      const cat = FOOD_CATEGORIES.find(c => c.id === catId);
+      if (!cat) return [];
+      return cat.items.filter(i => eatenToday.has(i.val)).map(i => i.val);
+    };
+
+    const vegFound = checkCat('veg');
+    const protFound = checkCat('prot');
+    const carbFound = checkCat('carb');
+    const fruitFound = checkCat('fruit');
+
+    const updateSector = (id, subId, arr) => {
+      const el = document.getElementById(id);
+      const sub = document.getElementById(subId);
+      if (arr.length > 0) {
+        el.classList.add('filled');
+        sub.textContent = 'Есть: ' + arr.slice(0, 2).join(', ');
+      } else {
+        el.classList.remove('filled');
+        sub.textContent = 'Добавь сегодня!';
+      }
+    };
+
+    updateSector('sec-veg', 'sub-veg', vegFound);
+    updateSector('sec-prot', 'sub-prot', protFound);
+    updateSector('sec-carb', 'sub-carb', carbFound);
+    updateSector('sec-fruit', 'sub-fruit', fruitFound);
+
+    const score = (vegFound.length > 0 ? 1 : 0) + (protFound.length > 0 ? 1 : 0) + (carbFound.length > 0 ? 1 : 0) + (fruitFound.length > 0 ? 1 : 0);
+    const badge = document.getElementById('plateStatusBadge');
+    if (score === 4) {
+      badge.textContent = '🌟 Супер-тарелка собрана (4 из 4)!';
+      badge.style.background = '#d1fae5';
+      badge.style.color = '#065f46';
+    } else {
+      badge.textContent = `Собрано элементов сегодня: ${score} из 4`;
+      badge.style.background = '#f3e8ff';
+      badge.style.color = '#6d28d9';
+    }
+
+    return { vegFound, protFound, carbFound, fruitFound, score };
+  }
+
+  // Умная контекстная речь Медка и Пуси (без поучений, с любовью и поддержкой)
+  function updateSmartMascotSpeech() {
+    const title = document.getElementById('speakerTitle');
+    const tag = document.getElementById('speechCategoryTag');
+    const text = document.getElementById('speechText');
+
+    const recent = entries[0];
+    const maxRecentSymptom = recent ? Math.max(recent.face, recent.neck, recent.hands) : 0;
+    const plate = renderPlateBalance();
+
+    if (maxRecentSymptom >= 5) {
+      title.textContent = '🦔 Медок и 🐒 Пуся поддерживают тебя:';
+      tag.textContent = '🤝 Дружеский план';
+      text.textContent = '«Мы видим, что коже сейчас непросто. Ничего страшного, мы рядом! Давай сегодня устроим передышку от сладостей и снеков — заменим шоколад на весёлые шалости, настольную игру или печёное яблоко, и попьём побольше чистой воды!»';
+    } else if (waterState.glasses < 2) {
+      title.textContent = '🦔 Медок шепчет по секрету:';
+      tag.textContent = '💧 Время освежиться';
+      text.textContent = '«Эй, напарник! Сегодня в копилке пока маловато чистой воды. Давай нальём стаканчик прямо сейчас и нажмём на капельку ниже — коже на лице и руках это очень помогает!»';
+    } else if (plate.vegFound.length === 0) {
+      title.textContent = '🐒 Пуся подаёт отличную идею:';
+      tag.textContent = '🥒 Хрустящий баланс';
+      text.textContent = '«Чтобы тарелка сегодня стала супер-сбалансированной, давай в следующий приём пищи добавим к гарниру и мясу что-нибудь зелёное и хрустящее — например, свежий огурец или брокколи!»';
+    } else {
+      title.textContent = '🦔 Медок и 🐒 Пуся радуются:';
+      tag.textContent = '🌟 Отличный баланс';
+      text.textContent = '«Классная работа! Сегодня в меню есть и полезные продукты, и чистая вода, а кожа чувствует себя спокойно. Продолжаем наблюдение!»';
+    }
+  }
+
+  function nextFriendlyTip() {
+    tipIndex = (tipIndex + 1) % FRIENDLY_TIPS.length;
+    const tip = FRIENDLY_TIPS[tipIndex];
+    document.getElementById('speakerTitle').textContent = tip.speaker;
+    document.getElementById('speechCategoryTag').textContent = tip.tag;
+    document.getElementById('speechText').textContent = tip.text;
+
+    const stage = document.getElementById('plushStage');
+    stage.classList.remove('bounce-now');
+    void stage.offsetWidth;
+    stage.classList.add('bounce-now');
+  }
+
+  function talkTo(who) {
+    document.querySelectorAll('.pet-switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + who).classList.add('active');
+
+    document.getElementById('card-medok').classList.toggle('active-pet', who === 'medok' || who === 'both');
+    document.getElementById('card-pusya').classList.toggle('active-pet', who === 'pusya' || who === 'both');
+
+    const stage = document.getElementById('plushStage');
+    stage.classList.remove('bounce-now');
+    void stage.offsetWidth;
+    stage.classList.add('bounce-now');
+
+    const title = document.getElementById('speakerTitle');
+    const tag = document.getElementById('speechCategoryTag');
+    const text = document.getElementById('speechText');
+
+    if (who === 'medok') {
+      const suspects = analyzeSuspects().suspects;
+      title.textContent = '🦔 Детектив Медок докладывает:';
+      tag.textContent = '🔎 Анализ за 24 часа';
+      if (suspects.length > 0 && suspects[0].avgPeak >= 3.5) {
+        text.textContent = `«Мой чуткий нос заметил закономерность: чаще всего реакция усиливается в течение суток после того, как в меню появляются "${suspects[0].name}". Давай проверим это вместе на графике!»`;
+      } else {
+        text.textContent = '«Мой радар следит за меню! Не забывай пить чистую воду и добавлять овощи к гарниру и мясу — так мы быстрее вычислим любые скрытые триггеры.»';
+      }
+    } else if (who === 'pusya') {
+      title.textContent = '🐒 Напарница Пуся предлагает:';
+      tag.textContent = '🤸‍♀️ Сделка без скуки';
+      text.textContent = '«Если вдруг захочется съесть гору сладостей — давай лучше обменяем шоколад на шалости, игру или сладкую грушу! И настроение супер, и кожа на лице, шее и руках спокойна!»';
+    } else {
+      updateSmartMascotSpeech();
+    }
+  }
+
+  function getZoneInfo(val) {
+    const v = parseInt(val, 10);
+    if (v === 0) return { text: '0 — Чисто ✨', color: '#10b981', bg: '#ecfdf5', faceEmoji: '😄', neckEmoji: '🦒', handsEmoji: '🙌' };
+    if (v <= 3) return { text: `${v} — Слабая реакция 🌸`, color: '#10b981', bg: '#f0fdf4', faceEmoji: '🙂', neckEmoji: '🧣', handsEmoji: '👐' };
+    if (v <= 6) return { text: `${v} — Заметный зуд / Покраснение 😟`, color: '#f59e0b', bg: '#fffbeb', faceEmoji: '😕', neckEmoji: '😣', handsEmoji: '✋' };
+    return { text: `${v} — Сильная реакция! 🚨`, color: '#ef4444', bg: '#fef2f2', faceEmoji: '🥵', neckEmoji: '🚨', handsEmoji: '🆘' };
+  }
+
+  function updateZoneUI() {
+    let maxVal = 0;
+    ['face', 'neck', 'hands'].forEach(zone => {
+      const val = parseInt(document.getElementById(zone + 'Input').value, 10);
+      maxVal = Math.max(maxVal, val);
+      const info = getZoneInfo(val);
+      const statusEl = document.getElementById('status-' + zone);
+      statusEl.textContent = info.text;
+      statusEl.style.background = info.bg;
+      statusEl.style.color = info.color;
+
+      const card = document.getElementById('card-' + zone);
+      card.style.borderColor = info.color;
+      card.style.background = info.bg;
+      document.getElementById('score-' + zone).textContent = `Уровень: ${val}/10`;
+      document.getElementById('emoji-' + zone).textContent = info[zone + 'Emoji'];
+    });
+
+    const pusyaMouth = document.getElementById('pusyaMouth');
+    const medokMouth = document.getElementById('medokMouth');
+    if (maxVal >= 5) {
+      pusyaMouth.setAttribute('d', 'M58,64 Q76,56 94,64');
+      medokMouth.setAttribute('d', 'M54,98 Q60,95 66,98');
+      document.getElementById('speakerTitle').textContent = '🤝 Медок и Пуся рядом с тобой:';
+      document.getElementById('speechCategoryTag').textContent = '💛 Забота о коже';
+      document.getElementById('speechText').textContent = '«Мы видим, что сейчас коже некомфортно. Сохраняй замер — а сегодня давай устроим день простой полезной еды, попьём чистой воды и заменим сладости на любимые игры!»';
+    } else {
+      pusyaMouth.setAttribute('d', 'M53,57 Q76,70 99,57');
+      medokMouth.setAttribute('d', 'M54,96 Q60,99 66,96');
+    }
+  }
+
+  function parseList(str) {
+    return str.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  }
+
+  document.getElementById('entryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const foods = parseList(document.getElementById('foodInput').value);
+    const drinks = parseList(document.getElementById('drinkInput').value);
+
+    const newEntry = {
+      id: Date.now(),
+      date: document.getElementById('dateInput').value,
+      time: document.getElementById('timeInput').value,
+      mealType: currentMeal,
+      foods,
+      drinks,
+      face: parseInt(document.getElementById('faceInput').value, 10),
+      neck: parseInt(document.getElementById('neckInput').value, 10),
+      hands: parseInt(document.getElementById('handsInput').value, 10),
+      notes: document.getElementById('notesInput').value.trim()
+    };
+
+    entries.push(newEntry);
+    entries.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+
+    // Если в напитках отмечена вода — автоматически прибавим стакан воды
+    if (drinks.includes('вода') && waterState.glasses < 6) {
+      waterState.glasses += 1;
+      localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    }
+
+    document.getElementById('foodInput').value = '';
+    document.getElementById('drinkInput').value = '';
+    document.getElementById('notesInput').value = '';
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    ['face', 'neck', 'hands'].forEach(z => document.getElementById(z + 'Input').value = 0);
+    updateZoneUI();
+
+    showToast('🎉 Запись добавлена! +10 звёзд в копилку детектива!');
+    renderAll();
+    updateSmartMascotSpeech();
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('confettiToast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2700);
+  }
+
+  // Алгоритм корреляции в окне 24 часов
+  function analyzeSuspects() {
+    const stats = {};
+    const asc = [...entries].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+    asc.forEach((entry, idx) => {
+      const items = [...new Set([...entry.foods, ...entry.drinks])];
+      const t0 = new Date(`${entry.date}T${entry.time}`).getTime();
+      let maxF = entry.face, maxN = entry.neck, maxH = entry.hands;
+
+      for (let j = idx; j < asc.length; j++) {
+        const tj = new Date(`${asc[j].date}T${asc[j].time}`).getTime();
+        const hrs = (tj - t0) / 3600000;
+        if (hrs >= 0 && hrs <= 24) {
+          maxF = Math.max(maxF, asc[j].face);
+          maxN = Math.max(maxN, asc[j].neck);
+          maxH = Math.max(maxH, asc[j].hands);
+        }
+      }
+
+      const peak = Math.max(maxF, maxN, maxH);
+      items.forEach(item => {
+        if (item === 'вода') return;
+        if (!stats[item]) stats[item] = { count: 0, peakSum: 0, fSum: 0, nSum: 0, hSum: 0 };
+        stats[item].count++;
+        stats[item].peakSum += peak;
+        stats[item].fSum += maxF;
+        stats[item].nSum += maxN;
+        stats[item].hSum += maxH;
+      });
+    });
+
+    const allRanked = Object.entries(stats).map(([name, s]) => ({
+      name,
+      count: s.count,
+      avgPeak: parseFloat((s.peakSum / s.count).toFixed(1)),
+      avgF: (s.fSum / s.count).toFixed(1),
+      avgN: (s.nSum / s.count).toFixed(1),
+      avgH: (s.hSum / s.count).toFixed(1)
+    })).sort((a, b) => b.avgPeak - a.avgPeak);
+
+    const suspects = allRanked.filter(x => x.avgPeak >= 2.5);
+    const safe = allRanked.filter(x => x.avgPeak < 2.5).sort((a, b) => a.avgPeak - b.avgPeak);
+
+    return { allRanked, suspects, safe };
+  }
+
+  // Построение интерактивного SVG-графика динамики симптомов
+  function renderChart() {
+    const container = document.getElementById('chartContainer');
+    const asc = [...entries].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+    if (asc.length === 0) {
+      container.innerHTML = `<div style="padding:24px; text-align:center; color:var(--muted);">Добавь записи в дневник, чтобы увидеть график динамики симптомов 📈</div>`;
+      return;
+    }
+
+    const W = 540, H = 210, padL = 32, padR = 20, padT = 18, padB = 38;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const getX = (i) => asc.length === 1 ? padL + plotW / 2 : padL + (i / (asc.length - 1)) * plotW;
+    const getY = (val) => padT + plotH - (val / 10) * plotH;
+
+    const makePath = (key) => asc.map((e, i) => `${i === 0 ? 'M' : 'L'}${getX(i).toFixed(1)},${getY(e[key]).toFixed(1)}`).join(' ');
+
+    // Горизонтальные линии сетки (0, 5, 10)
+    const gridLines = [0, 3, 6, 10].map(v => {
+      const y = getY(v).toFixed(1);
+      return `
+        <line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#e2e8f0" stroke-dasharray="4,4" stroke-width="1"/>
+        <text x="${padL - 8}" y="${Number(y) + 4}" font-size="10" font-weight="700" fill="#64748b" text-anchor="end">${v}</text>
+      `;
+    }).join('');
+
+    // Подписи времени по оси X
+    const xLabels = asc.map((e, i) => {
+      const x = getX(i).toFixed(1);
+      const shortDate = e.date.slice(5);
+      return `<text x="${x}" y="${H - 10}" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">${shortDate} ${e.time}</text>`;
+    }).join('');
+
+    // Интерактивные точки
+    const pointsHtml = asc.map((e, i) => {
+      const x = getX(i).toFixed(1);
+      const yF = getY(e.face).toFixed(1);
+      const yN = getY(e.neck).toFixed(1);
+      const yH = getY(e.hands).toFixed(1);
+      return `
+        <g style="cursor:pointer;" onclick="inspectChartPoint(${e.id})">
+          <circle cx="${x}" cy="${yH}" r="5" fill="#8b5cf6" stroke="#fff" stroke-width="2"/>
+          <circle cx="${x}" cy="${yN}" r="5" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+          <circle cx="${x}" cy="${yF}" r="5.5" fill="#ec4899" stroke="#fff" stroke-width="2"/>
+        </g>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; min-width:440px; display:block;">
+        ${gridLines}
+        <path d="${makePath('hands')}" fill="none" stroke="#8b5cf6" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="${makePath('neck')}" fill="none" stroke="#f59e0b" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="${makePath('face')}" fill="none" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+        ${pointsHtml}
+        ${xLabels}
+      </svg>
+    `;
+  }
+
+  function inspectChartPoint(id) {
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+    const infoBox = document.getElementById('chartPointInfo');
+    const items = [...entry.foods, ...entry.drinks].join(', ') || 'только замер симптомов';
+    infoBox.innerHTML = `
+      📅 <b>${entry.date} в ${entry.time} (${entry.mealType})</b> — Еда/напитки: <b>${items}</b>.<br>
+      Реакция кожи: Лицо <b>${entry.face}/10</b> · Шея <b>${entry.neck}/10</b> · Руки <b>${entry.hands}/10</b>. ${entry.notes ? `<i>(${entry.notes})</i>` : ''}
+    `;
+  }
+
+  // Дружеские подсказки замен
+  function renderFriendlySwaps(suspects) {
+    const box = document.getElementById('friendlySwapsBox');
+    const matchedSwaps = [];
+
+    suspects.forEach(s => {
+      if (SWAP_SUGGESTIONS[s.name]) {
+        matchedSwaps.push({ trigger: s.name, avg: s.avgPeak, ...SWAP_SUGGESTIONS[s.name] });
+      }
+    });
+
+    if (matchedSwaps.length === 0) {
+      matchedSwaps.push(SWAP_SUGGESTIONS['шоколад'], SWAP_SUGGESTIONS['снеки']);
+    }
+
+    box.innerHTML = matchedSwaps.slice(0, 2).map(sw => `
+      <div class="swap-card">
+        <div class="swap-icon">${sw.icon}</div>
+        <div>
+          <div style="font-weight:800; font-size:0.9rem; color:#92400e;">${sw.title}</div>
+          <div style="font-size:0.81rem; color:#78350f; margin-top:3px; line-height:1.4;">${sw.desc}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function switchView(mode) {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + mode).classList.add('active');
+    const entrySec = document.getElementById('entrySection');
+    if (mode === 'analytics') {
+      entrySec.style.display = 'none';
+      document.getElementById('analyticsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      entrySec.style.display = 'grid';
+    }
+  }
+
+  function getBadgeColor(val) {
+    if (val <= 2.5) return 'bg-good';
+    if (val <= 5.5) return 'bg-warn';
+    return 'bg-bad';
+  }
+
+  function getBarHex(val) {
+    if (val <= 2.5) return '#10b981';
+    if (val <= 5.5) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function filterByFood(foodName) {
+    const input = document.getElementById('searchInput');
+    input.value = foodName;
+    renderAll();
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    renderAll();
+  }
+
+  function deleteEntry(id) {
+    entries = entries.filter(e => e.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    renderAll();
+  }
+
+  function openResetModal() {
+    document.getElementById('resetModal').classList.add('open');
+  }
+
+  function closeResetModal() {
+    document.getElementById('resetModal').classList.remove('open');
+  }
+
+  function confirmClearAll() {
+    entries = [];
+    waterState = { date: getTodayStr(0), glasses: 0 };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    closeResetModal();
+    renderAll();
+    showToast('✨ Журнал очищен для новых записей!');
+  }
+
+  function confirmLoadDemo() {
+    entries = [...DEMO_DATA];
+    waterState = { date: getTodayStr(0), glasses: 4 };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    closeResetModal();
+    renderAll();
+    showToast('📚 Демо-пример с графиками загружен!');
+  }
+
+  function renderAll() {
+    renderWaterTracker();
+    const plate = renderPlateBalance();
+    renderChart();
+
+    const stars = entries.length * 10 + waterState.glasses * 5;
+    document.getElementById('starCount').textContent = stars;
+    const rankEl = document.getElementById('detectiveRank');
+    if (stars < 40) rankEl.textContent = '🌱 Стажёр агентства';
+    else if (stars < 85) rankEl.textContent = '🔍 Опытный аналитик';
+    else if (stars < 130) rankEl.textContent = '🦸‍♀️ Мастер-Детектив';
+    else rankEl.textContent = '👑 Глава расследований';
+
+    // Достижения (включая здоровые пищевые привычки)
+    const achBox = document.getElementById('achievementsBox');
+    const badges = [
+      { unlocked: entries.length >= 1, icon: '🥇', title: 'Первая улика' },
+      { unlocked: waterState.glasses >= 5, icon: '💧', title: 'Мастер водного баланса' },
+      { unlocked: plate.vegFound.length > 0 && plate.protFound.length > 0 && plate.carbFound.length > 0, icon: '🥗', title: 'Сбалансированная тарелка' },
+      { unlocked: entries.some(e => e.face <= 1 && e.neck <= 1 && e.hands <= 1), icon: '✨', title: 'Спокойная кожа' },
+      { unlocked: entries.length >= 6, icon: '🕵️‍♀️', title: 'Шерлок и Команда' }
+    ];
+    achBox.innerHTML = badges.map(b => `
+      <div style="padding:7px 11px; border-radius:12px; font-size:0.8rem; font-weight:800; border:2px solid ${b.unlocked ? '#f59e0b' : '#e2e8f0'}; background:${b.unlocked ? '#fef3c7' : '#f8fafc'}; opacity:${b.unlocked ? '1' : '0.45'};">
+        ${b.icon} ${b.title}
+      </div>
+    `).join('');
+
+    // Подозреваемые и безопасный список
+    const { allRanked, suspects, safe } = analyzeSuspects();
+    const suspBox = document.getElementById('suspectsContainer');
+    const listToShow = suspects.length > 0 ? suspects : allRanked;
+
+    if (listToShow.length === 0) {
+      suspBox.innerHTML = `<div style="color:var(--muted);font-size:0.86rem;">Добавь записи о питании, чтобы алгоритм вычислил подозрительные продукты 🧩</div>`;
+    } else {
+      suspBox.innerHTML = listToShow.slice(0, 5).map(s => {
+        const pct = Math.min(100, Math.round((s.avgPeak / 10) * 100));
+        return `
+          <div class="suspect-card" onclick="filterByFood('${s.name}')" title="Нажми, чтобы отфильтровать все записи с этим продуктом">
+            <div class="suspect-top">
+              <div style="font-weight:800; font-size:0.93rem; text-transform:capitalize;">
+                🔎 ${s.name} <span style="font-weight:600; color:var(--muted); font-size:0.76rem;">(встречалось: ${s.count})</span>
+              </div>
+              <span class="badge-score ${getBadgeColor(s.avgPeak)}">Пик: ${s.avgPeak}/10</span>
+            </div>
+            <div class="risk-bar-track">
+              <div class="risk-bar-fill" style="width:${pct}%; background:${getBarHex(s.avgPeak)};"></div>
+            </div>
+            <div style="font-size:0.76rem; color:var(--muted);">
+              Средняя реакция за 24ч — Лицо: <b>${s.avgF}</b> · Шея: <b>${s.avgN}</b> · Руки: <b>${s.avgH}</b>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const safeBox = document.getElementById('safeFoodsContainer');
+    if (safe.length === 0) {
+      safeBox.innerHTML = `<span style="font-size:0.8rem; color:var(--muted);">Продолжай вести записи, чтобы пополнить зелёный список</span>`;
+    } else {
+      safeBox.innerHTML = safe.slice(0, 8).map(item => `
+        <span class="chip" style="background:#ecfdf5; border-color:#10b981; color:#065f46;" onclick="filterByFood('${item.name}')">
+          ✅ ${item.name} (${item.avgPeak})
+        </span>
+      `).join('');
+    }
+
+    renderFriendlySwaps(listToShow);
+
+    // Таблица журнала
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const tbody = document.getElementById('logBody');
+    const filtered = entries.filter(e => !q || [...e.foods, ...e.drinks, e.notes, e.mealType].join(' ').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:18px; color:var(--muted);">Записей не найдено 🌟</td></tr>`;
+    } else {
+      tbody.innerHTML = filtered.map(e => `
+        <tr>
+          <td><b>${e.date}</b><br><span style="font-size:0.76rem; color:var(--muted);">${e.time}</span></td>
+          <td><b>${e.mealType}</b></td>
+          <td>
+            ${e.foods.map(f => `<span class="food-pill" onclick="filterByFood('${f}')">🍽️ ${f}</span>`).join('')}
+            ${e.drinks.map(d => `<span class="drink-pill" onclick="filterByFood('${d}')">🥤 ${d}</span>`).join('')}
+          </td>
+          <td><span class="badge-score ${getBadgeColor(e.face)}">${e.face}</span></td>
+          <td><span class="badge-score ${getBadgeColor(e.neck)}">${e.neck}</span></td>
+          <td><span class="badge-score ${getBadgeColor(e.hands)}">${e.hands}</span></td>
+          <td style="color:var(--muted); font-size:0.82rem;">${e.notes || '—'}</td>
+          <td><button type="button" class="btn-small" onclick="deleteEntry(${e.id})">🗑️</button></td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  function exportCSV() {
+    if (!entries.length) {
+      showToast('Сначала добавь хотя бы одну запись!');
+      return;
+    }
+    const rows = [
+      ['Дата', 'Время', 'Тип', 'Еда', 'Напитки', 'Лицо', 'Шея', 'Руки', 'Заметки'],
+      ...entries.map(e => [e.date, e.time, e.mealType, e.foods.join('; '), e.drinks.join('; '), e.face, e.neck, e.hands, e.notes])
+    ];
+    const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'medok_pusya_analytics.csv';
+    a.click();
+  }
+
+  const now = new Date();
+  document.getElementById('dateInput').value = now.toISOString().split('T')[0];
+  document.getElementById('timeInput').value = now.toTimeString().slice(0, 5);
+  initFoodBuilder();
+  updateZoneUI();
+  renderAll();
+  updateSmartMascotSpeech();
+</script>
+</body>
+</html>
