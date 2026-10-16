@@ -3,12 +3,13 @@
 
 export const PARTS = {
   head: [
-    { id: 'camera', emoji: '👀', label: 'Камера', perk: 'Показывает путь, пока пишешь программу' },
+    { id: 'face', emoji: '😊', label: 'Экран-лицо', perk: 'Показывает настроение робота. Просто красиво!' },
     { id: 'brain', emoji: '🧠', label: 'Умная голова', perk: 'Даёт до трёх подсказок в миссии' },
-    { id: 'lamp', emoji: '🔦', label: 'Фонарь', perk: 'Видит в темноте' },
+    { id: 'lamp', emoji: '🔦', label: 'Фонарь', perk: 'Видит в тёмных миссиях' },
+    { id: 'antenna', emoji: '📡', label: 'Антенна', perk: 'Можно запускать программу по одному шагу' },
   ],
   move: [
-    { id: 'wheels', emoji: '🛞', label: 'Колёса', perk: 'Команда «До упора»: едет, пока не упрётся. В грязи застревают' },
+    { id: 'wheels', emoji: '🛞', label: 'Колёса', perk: 'Самые быстрые, но только по ровному: в грязи вязнут, камни не берут' },
     { id: 'legs', emoji: '🦿', label: 'Ноги', perk: 'Перешагивают камни и грязь' },
     { id: 'tracks', emoji: '🐛', label: 'Гусеницы', perk: 'Проходят грязь' },
     { id: 'fly', emoji: '🚁', label: 'Пропеллер', perk: 'Летает над водой и камнями, но заряда хватает на 16 клеток' },
@@ -24,7 +25,7 @@ export const PARTS = {
     { id: '#3b82f6', label: 'Синий' }, { id: '#ec4899', label: 'Розовый' }, { id: '#eab308', label: 'Жёлтый' },
   ],
 };
-export const DEFAULT_ROBOT = { name: 'Болт', head: 'camera', move: 'wheels', tool: 'claw', color: '#f97316' };
+export const DEFAULT_ROBOT = { name: 'Болт', head: 'face', move: 'wheels', tool: 'claw', color: '#f97316' };
 export const FLY_ENERGY = 16;
 
 // Клетки: . пол, # стена, ~ вода, ^ камень, % грязь, S старт, E финиш,
@@ -56,8 +57,6 @@ export const MISSIONS = [
 ];
 
 const DIRS = { N: [-1, 0], E: [0, 1], S: [1, 0], W: [0, -1] };
-const LEFT = { N: 'W', W: 'S', S: 'E', E: 'N' };
-const RIGHT = { N: 'E', E: 'S', S: 'W', W: 'N' };
 
 export function parseMission(m) {
   const cells = m.map.map((row) => row.split(''));
@@ -118,23 +117,34 @@ function act(g, robot, s) {
   return { s, ev: 'nothing' };
 }
 
-// Команда программы -> последовательность элементарных шагов с событиями
-// cmd: { c: 'F'|'L'|'R'|'A'|'U', n }
+// Команда программы -> последовательность элементарных шагов с событиями.
+// { c: 'M', d: 'N'|'E'|'S'|'W', n } — повернуться в сторону карты и пройти n клеток; { c: 'A' } — действие.
 export function* runCommand(g, robot, s, cmd) {
-  const n = cmd.n || 1;
-  if (cmd.c === 'L' || cmd.c === 'R') {
-    for (let i = 0; i < n; i++) { s = { ...s, d: (cmd.c === 'L' ? LEFT : RIGHT)[s.d] }; yield { s, ev: 'turn' }; }
-  } else if (cmd.c === 'F') {
-    for (let i = 0; i < n; i++) { const x = forward(g, robot, s); s = x.s; yield x; if (x.ev) return; }
-  } else if (cmd.c === 'U') {
-    for (let i = 0; i < 30; i++) {
-      const [dr, dc] = DIRS[s.d];
-      if (blocker(g.cells[s.r + dr]?.[s.c + dc], robot.move)) { if (!i) yield { s, ev: 'stay' }; return; }
-      const x = forward(g, robot, s); s = x.s; yield x; if (x.ev) return;
-    }
+  if (cmd.c === 'M') {
+    if (s.d !== cmd.d) { s = { ...s, d: cmd.d }; yield { s, ev: 'turn' }; }
+    for (let i = 0; i < (cmd.n || 1); i++) { const x = forward(g, robot, s); s = x.s; yield x; if (x.ev) return; }
   } else if (cmd.c === 'A') {
-    for (let i = 0; i < n; i++) { const x = act(g, robot, s); s = x.s; yield x; }
+    yield act(g, robot, s);
   }
+}
+
+// План на карте без учёта препятствий: куда ребёнок хочет отправить робота
+export function plannedPath(g, program) {
+  let [r, c] = g.start;
+  const pts = [[r, c]];
+  const acts = [];
+  for (const p of program) {
+    if (p.c === 'A') { acts.push([r, c]); continue; }
+    const [dr, dc] = DIRS[p.d];
+    for (let i = 0; i < p.n; i++) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (nr < 0 || nc < 0 || nr >= g.h || nc >= g.w) break;
+      r = nr; c = nc;
+      pts.push([r, c]);
+    }
+  }
+  return { pts, acts };
 }
 
 const STOP = new Set(['wall', 'water', 'rock', 'mud', 'energy']);
@@ -160,14 +170,12 @@ export function simulate(g, m, robot, program) {
   return { s, trail, fail: null, win: isWin(g, s) };
 }
 
-const BFS_CMDS = [
-  ...[1, 2, 3, 4, 5, 6].map((n) => ({ c: 'F', n })), { c: 'L', n: 1 }, { c: 'R', n: 1 }, { c: 'L', n: 2 }, { c: 'A', n: 1 },
-];
+const BFS_CMDS = ['N', 'E', 'S', 'W'].flatMap((d) => [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ c: 'M', d, n }))).concat([{ c: 'A' }]);
 
-// Самая короткая программа (в командах, множитель ×N считается одной командой) из состояния s.
+// Самая короткая программа (в командах: «➡ ×3» считается одной командой) из состояния s.
 export function solve(g, m, robot, s0 = initState(g, m, robot)) {
-  const cmds = robot.move === 'wheels' ? [...BFS_CMDS, { c: 'U' }] : BFS_CMDS;
-  const key = (s) => `${s.r},${s.c},${s.d},${s.done},${s.carry},${s.delivered},${s.energy}`;
+  const cmds = BFS_CMDS;
+  const key = (s) => `${s.r},${s.c},${s.done},${s.carry},${s.delivered},${s.energy}`;
   const seen = new Map([[key(s0), null]]);
   let frontier = [s0];
   if (isWin(g, s0)) return [];
@@ -180,7 +188,7 @@ export function solve(g, m, robot, s0 = initState(g, m, robot)) {
         let changed = false;
         for (const x of runCommand(g, robot, s, cmd)) {
           t = x.s;
-          if (STOP.has(x.ev) || x.ev === 'nothing' || x.ev === 'notool' || x.ev === 'full' || x.ev === 'stay') { bad = true; break; }
+          if (STOP.has(x.ev) || x.ev === 'nothing' || x.ev === 'notool' || x.ev === 'full') { bad = true; break; }
           changed = true;
         }
         if (bad || !changed) continue;
@@ -202,41 +210,97 @@ export function solve(g, m, robot, s0 = initState(g, m, robot)) {
 
 // ---------------------------------------------------------------- рисунок робота
 
-export function robotSVG(robot, size = 120, mood = 'happy') {
-  const c = robot.color;
-  const dark = '#334155';
-  const head = {
-    camera: `<rect x="52" y="10" width="16" height="12" rx="3" fill="${dark}"/><circle cx="60" cy="16" r="4.5" fill="#38bdf8"/><circle cx="58.5" cy="14.5" r="1.4" fill="#fff"/>`,
-    brain: `<path d="M38 27 Q40 6 60 6 Q80 6 82 27 Z" fill="#f9a8d4" stroke="#db2777" stroke-width="1.5"/><path d="M48 18 q5 -6 10 0 q5 6 10 0 M52 24 q4 -4 8 0" fill="none" stroke="#db2777" stroke-width="1.5"/>`,
-    lamp: `<path d="M60 14 L44 -6 L76 -6 Z" fill="#fde68a" opacity=".55"/><rect x="53" y="10" width="14" height="12" rx="3" fill="#facc15" stroke="#a16207" stroke-width="1.5"/><rect x="55" y="12" width="10" height="4" rx="2" fill="#fff"/>`,
-  }[robot.head] || '';
-  const tool = {
-    can: `<rect x="104" y="80" width="18" height="16" rx="4" fill="#60a5fa" stroke="#1d4ed8" stroke-width="1.5"/><path d="M122 84 L132 76" stroke="#1d4ed8" stroke-width="3" stroke-linecap="round"/><circle cx="134" cy="74" r="3" fill="#93c5fd"/>`,
-    claw: `<path d="M106 72 q14 -4 16 8 M106 88 q14 4 16 -8" fill="none" stroke="${dark}" stroke-width="4" stroke-linecap="round"/>`,
-    basket: `<path d="M102 82 L126 82 L122 100 L106 100 Z" fill="#d97706" stroke="#92400e" stroke-width="1.5"/><path d="M106 88 L122 88 M108 94 L120 94" stroke="#92400e" stroke-width="1.2"/><path d="M106 82 Q114 70 122 82" fill="none" stroke="#92400e" stroke-width="2"/>`,
-    magnet: `<path d="M104 72 L104 88 Q104 98 114 98 Q124 98 124 88 L124 72 L118 72 L118 88 Q118 92 114 92 Q110 92 110 88 L110 72 Z" fill="#ef4444" stroke="#991b1b" stroke-width="1.2"/><rect x="104" y="70" width="6" height="5" fill="#cbd5e1"/><rect x="118" y="70" width="6" height="5" fill="#cbd5e1"/>`,
-  }[robot.tool] || '';
+let uidN = 0;
+const shade = (hex, k) => {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v) => Math.max(0, Math.min(255, Math.round(k > 0 ? v + (255 - v) * k : v * (1 + k))));
+  return `#${[n >> 16, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, '0')).join('')}`;
+};
+
+// mood: happy | cheer | oops. Робот смотрит на зрителя; flip разворачивает его влево.
+export function robotSVG(robot, size = 120, mood = 'happy', flip = false) {
+  const id = `rb${++uidN}`;
+  const col = robot.color || '#f97316';
+  const lite = shade(col, 0.45);
+  const deep = shade(col, -0.3);
+  const ink = '#1e293b';
   const fly = robot.move === 'fly';
+  const lift = fly ? -8 : 0;
+  const defs = `<defs>
+    <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lite}"/><stop offset=".55" stop-color="${col}"/><stop offset="1" stop-color="${deep}"/></linearGradient>
+    <linearGradient id="${id}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cbd5e1"/></linearGradient>
+    <linearGradient id="${id}m" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".5" stop-color="#94a3b8"/><stop offset="1" stop-color="#e2e8f0"/></linearGradient>
+    <radialGradient id="${id}g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#a5f3fc"/><stop offset="1" stop-color="#22d3ee"/></radialGradient>
+    <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fde047"/><stop offset=".6" stop-color="#fb923c"/><stop offset="1" stop-color="#ef4444" stop-opacity="0"/></linearGradient>
+  </defs>`;
+
   const bottom = {
-    wheels: `<circle cx="40" cy="126" r="12" fill="#1f2937"/><circle cx="40" cy="126" r="5" fill="#9ca3af"/><circle cx="80" cy="126" r="12" fill="#1f2937"/><circle cx="80" cy="126" r="5" fill="#9ca3af"/>`,
-    legs: `<rect x="38" y="114" width="10" height="16" fill="#94a3b8"/><rect x="72" y="114" width="10" height="16" fill="#94a3b8"/><rect x="31" y="128" width="22" height="9" rx="4" fill="${dark}"/><rect x="67" y="128" width="22" height="9" rx="4" fill="${dark}"/>`,
-    tracks: `<rect x="22" y="115" width="76" height="22" rx="11" fill="#374151"/>${[34, 50, 70, 86].map((x) => `<circle cx="${x}" cy="126" r="5" fill="#9ca3af"/>`).join('')}`,
-    fly: `<path d="M50 114 L70 114 L64 124 L56 124 Z" fill="#94a3b8"/><path d="M56 124 L60 132 L64 124 Z" fill="#fb923c"/><ellipse cx="60" cy="138" rx="22" ry="3" fill="#000" opacity=".12"/>`,
+    wheels: `<rect x="46" y="140" width="68" height="8" rx="4" fill="#64748b"/>
+      ${[50, 110].map((x) => `<circle cx="${x}" cy="152" r="18" fill="${ink}"/><circle cx="${x}" cy="152" r="11" fill="url(#${id}m)"/><circle cx="${x}" cy="152" r="4.5" fill="${col}"/>
+        ${[0, 60, 120, 180, 240, 300].map((a) => `<rect x="${x - 2}" y="${152 - 18}" width="4" height="5" rx="1" fill="#475569" transform="rotate(${a} ${x} 152)"/>`).join('')}`).join('')}`,
+    legs: `${[60, 100].map((x) => `<rect x="${x - 6}" y="140" width="12" height="14" rx="5" fill="url(#${id}m)"/><circle cx="${x}" cy="155" r="6" fill="#64748b"/>
+      <rect x="${x - 5}" y="156" width="10" height="8" rx="3" fill="url(#${id}m)"/><path d="M${x - 15} 172 Q${x - 15} 162 ${x} 162 Q${x + 15} 162 ${x + 15} 172 Z" fill="${deep}"/>`).join('')}`,
+    tracks: `<rect x="30" y="140" width="100" height="32" rx="16" fill="${ink}"/>
+      ${Array.from({ length: 12 }, (_, i) => `<rect x="${36 + i * 8}" y="140" width="4" height="4" rx="1" fill="#475569"/><rect x="${36 + i * 8}" y="168" width="4" height="4" rx="1" fill="#475569"/>`).join('')}
+      ${[46, 68, 92, 114].map((x) => `<circle cx="${x}" cy="156" r="${x === 46 || x === 114 ? 10 : 8}" fill="url(#${id}m)"/><circle cx="${x}" cy="156" r="3" fill="${col}"/>`).join('')}`,
+    fly: `<path d="M68 138 L92 138 L86 150 L74 150 Z" fill="url(#${id}m)"/><path d="M72 150 L80 172 L88 150 Z" fill="url(#${id}f)"/>`,
   }[robot.move] || '';
-  const prop = fly ? `<rect x="58" y="-8" width="4" height="18" fill="${dark}"/><ellipse cx="44" cy="-9" rx="18" ry="3.5" fill="#64748b"/><ellipse cx="76" cy="-9" rx="18" ry="3.5" fill="#64748b"/><circle cx="60" cy="-9" r="3.5" fill="${dark}"/>` : '';
-  const mouth = mood === 'oops' ? '<path d="M52 54 q8 -5 16 0" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>'
-    : '<path d="M50 51 q10 8 20 0" fill="none" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round"/>';
-  return `<svg class="robot-svg" viewBox="-6 -14 146 156" width="${size}" height="${Math.round(size * 156 / 146)}" aria-hidden="true">
-    ${prop}${head}
-    <rect x="30" y="22" width="60" height="40" rx="12" fill="#e5e7eb" stroke="#475569" stroke-width="2"/>
-    <circle cx="47" cy="40" r="6.5" fill="#0f172a"/><circle cx="73" cy="40" r="6.5" fill="#0f172a"/>
-    <circle cx="45" cy="38" r="2" fill="#fff"/><circle cx="71" cy="38" r="2" fill="#fff"/>${mouth}
-    <rect x="54" y="62" width="12" height="7" fill="#94a3b8"/>
-    <rect x="10" y="74" width="16" height="9" rx="4.5" fill="#94a3b8"/><circle cx="10" cy="78.5" r="6" fill="${dark}"/>
-    <rect x="94" y="74" width="14" height="9" rx="4.5" fill="#94a3b8"/>
-    <rect x="24" y="68" width="72" height="46" rx="11" fill="${c}" stroke="rgba(0,0,0,.25)" stroke-width="2"/>
-    <rect x="42" y="77" width="36" height="20" rx="5" fill="#fff" opacity=".55"/>
-    <circle cx="51" cy="87" r="3" fill="#22c55e"/><circle cx="60" cy="87" r="3" fill="#facc15"/><circle cx="69" cy="87" r="3" fill="#ef4444"/>
-    ${tool}${bottom}
-  </svg>`;
+
+  const toolHand = { x: 140, y: 120 };
+  const tool = {
+    can: `<g transform="translate(130 104)"><path d="M4 10 h22 v18 a6 6 0 0 1 -6 6 h-10 a6 6 0 0 1 -6 -6 z" fill="#3b82f6"/><path d="M8 10 q8 -12 16 0" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+      <path d="M26 16 L40 4" stroke="#1d4ed8" stroke-width="4" stroke-linecap="round"/><ellipse cx="42" cy="3" rx="4" ry="5" fill="#60a5fa" transform="rotate(-40 42 3)"/>
+      <circle cx="46" cy="10" r="1.6" fill="#7dd3fc"/><circle cx="49" cy="5" r="1.6" fill="#7dd3fc"/><circle cx="45" cy="15" r="1.6" fill="#7dd3fc"/></g>`,
+    claw: `<g transform="translate(134 106)"><rect x="0" y="8" width="10" height="12" rx="3" fill="#64748b"/>
+      <path d="M8 10 Q22 0 24 12" fill="none" stroke="${ink}" stroke-width="5" stroke-linecap="round"/><path d="M8 18 Q22 28 24 16" fill="none" stroke="${ink}" stroke-width="5" stroke-linecap="round"/></g>`,
+    basket: `<g transform="translate(128 108)"><path d="M10 6 Q20 -8 30 6" fill="none" stroke="#92400e" stroke-width="3"/><path d="M2 8 h36 l-5 22 h-26 z" fill="#d97706"/>
+      <path d="M5 15 h30 M7 22 h26" stroke="#92400e" stroke-width="2"/><path d="M14 8 l-1 22 M26 8 l1 22 M20 8 v22" stroke="#b45309" stroke-width="1.5"/></g>`,
+    magnet: `<g transform="translate(132 102)"><path d="M2 2 h10 v18 a8 8 0 0 0 16 0 v-18 h10 v18 a18 18 0 0 1 -36 0 z" fill="#ef4444"/>
+      <rect x="2" y="0" width="10" height="7" fill="#e2e8f0"/><rect x="28" y="0" width="10" height="7" fill="#e2e8f0"/>
+      <path d="M44 6 l5 -3 M45 14 l6 0 M44 22 l5 3" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/></g>`,
+  }[robot.tool] || '';
+
+  const headTop = {
+    face: `<path d="M80 30 Q82 18 92 14" fill="none" stroke="#64748b" stroke-width="3" stroke-linecap="round"/><circle cx="93" cy="13" r="6" fill="${col}"/><circle cx="91" cy="11" r="2" fill="#fff" opacity=".8"/>`,
+    brain: `<path d="M50 40 Q50 10 80 10 Q110 10 110 40 Z" fill="#e0f2fe" opacity=".75" stroke="#7dd3fc" stroke-width="2"/>
+      <path d="M58 36 q-2 -14 10 -16 q4 -8 14 -4 q10 -4 14 6 q8 4 4 14 Z" fill="#f9a8d4" stroke="#db2777" stroke-width="1.5"/>
+      <path d="M66 28 q6 -6 12 0 q6 6 12 0 M70 34 q5 -4 10 0" fill="none" stroke="#db2777" stroke-width="1.5"/><path d="M60 22 q6 -8 14 -8" stroke="#fff" stroke-width="3" fill="none" opacity=".8" stroke-linecap="round"/>`,
+    lamp: `<path d="M80 22 L58 -6 L102 -6 Z" fill="#fef08a" opacity=".55"/><rect x="68" y="20" width="24" height="16" rx="6" fill="#475569"/><circle cx="80" cy="28" r="6.5" fill="#fde047" stroke="#fff" stroke-width="2"/>`,
+    antenna: `${[[62, 54, 10], [98, 106, 10]].map(([x0, x1, y]) => `<path d="M${x0} 32 L${x1} ${y}" stroke="#64748b" stroke-width="3" stroke-linecap="round"/><circle cx="${x1}" cy="${y}" r="5.5" fill="#22d3ee"/><circle cx="${x1}" cy="${y}" r="9" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity=".5"/>`).join('')}`,
+  }[robot.head] || '';
+
+  const prop = fly ? `<rect x="77" y="2" width="6" height="28" rx="3" fill="#64748b"/>
+    <ellipse cx="56" cy="2" rx="28" ry="5" fill="#94a3b8" opacity=".85"/><ellipse cx="104" cy="2" rx="28" ry="5" fill="#94a3b8" opacity=".85"/>
+    <ellipse cx="80" cy="2" rx="52" ry="7" fill="none" stroke="#cbd5e1" stroke-width="1.5" opacity=".6"/><circle cx="80" cy="2" r="6" fill="${col}"/>` : '';
+
+  // глаза на экране-визоре
+  const eye = (x) => (mood === 'cheer'
+    ? `<path d="M${x - 9} 66 Q${x} 54 ${x + 9} 66" fill="none" stroke="url(#${id}g)" stroke-width="5" stroke-linecap="round"/>`
+    : mood === 'oops'
+      ? `<path d="M${x - 7} 56 l14 12 M${x + 7} 56 l-14 12" stroke="url(#${id}g)" stroke-width="4.5" stroke-linecap="round"/>`
+      : `<rect x="${x - 7}" y="53" width="14" height="18" rx="7" fill="url(#${id}g)"/><circle cx="${x - 2}" cy="58" r="2.6" fill="#fff"/>`);
+  const mouth = mood === 'oops'
+    ? '<path d="M72 80 q8 -5 16 0" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round"/>'
+    : '<path d="M71 77 q9 8 18 0" fill="none" stroke="#67e8f9" stroke-width="3" stroke-linecap="round"/>';
+
+  const svg = `${defs}
+    <ellipse cx="80" cy="176" rx="${fly ? 30 : 44}" ry="${fly ? 4 : 6}" fill="#0f172a" opacity="${fly ? 0.1 : 0.16}"/>
+    <g transform="translate(0 ${lift})">
+      ${bottom}
+      <path d="M44 118 Q24 118 22 136" fill="none" stroke="url(#${id}m)" stroke-width="10" stroke-linecap="round"/><circle cx="22" cy="138" r="8" fill="#64748b"/>
+      <path d="M116 118 Q132 116 ${toolHand.x - 4} ${toolHand.y}" fill="none" stroke="url(#${id}m)" stroke-width="10" stroke-linecap="round"/>
+      <rect x="40" y="94" width="80" height="50" rx="22" fill="url(#${id}b)"/>
+      <ellipse cx="62" cy="104" rx="14" ry="5" fill="#fff" opacity=".35"/>
+      <circle cx="80" cy="120" r="11" fill="#fff" opacity=".85"/><path d="M80 113 v6 M74 116 a8 8 0 1 0 12 0" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round"/>
+      <rect x="72" y="86" width="16" height="10" rx="3" fill="url(#${id}m)"/>
+      ${prop}${headTop}
+      <circle cx="36" cy="62" r="7" fill="${col}"/><circle cx="124" cy="62" r="7" fill="${col}"/>
+      <rect x="38" y="30" width="84" height="60" rx="26" fill="url(#${id}h)" stroke="#94a3b8" stroke-width="1.5"/>
+      <rect x="47" y="42" width="66" height="40" rx="17" fill="#0f172a"/>
+      <path d="M54 48 q10 -4 22 -2" stroke="#fff" stroke-width="2.5" opacity=".25" fill="none" stroke-linecap="round"/>
+      ${eye(66)}${eye(94)}${mouth}
+      <ellipse cx="52" cy="76" rx="5" ry="3" fill="#f472b6" opacity="${robot.head === 'face' ? 0.8 : 0.5}"/><ellipse cx="108" cy="76" rx="5" ry="3" fill="#f472b6" opacity="${robot.head === 'face' ? 0.8 : 0.5}"/>
+      ${tool}
+    </g>`;
+  return `<svg class="robot-svg" viewBox="0 -12 190 194" width="${size}" height="${Math.round(size * 194 / 190)}" aria-hidden="true">${flip ? `<g transform="translate(180 0) scale(-1 1)">${svg}</g>` : svg}</svg>`;
 }
