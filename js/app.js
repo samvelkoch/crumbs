@@ -25,7 +25,7 @@ import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.j
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -534,7 +534,11 @@ const heroFor = (who, mood, size) => (who === 'medok' ? medokSVG(mood, Math.roun
 function gameStats(g) {
   const list = state.games.filter((x) => x.g === g);
   const solo = list.filter((x) => x.mode === 'solo');
-  return { n: list.length, best: solo.length ? Math.max(...solo.map((x) => x.scores[0])) : null };
+  // рекорд на самом высоком уровне, где играли
+  const top = solo.length ? Math.max(...solo.map((x) => x.level || 1)) : 0;
+  const atTop = solo.filter((x) => (x.level || 1) === top);
+  const b = atTop.length ? atTop.reduce((m, x) => (x.scores[0] > m.scores[0] ? x : m)) : null;
+  return { n: list.length, best: b ? b.scores[0] : null, of: b?.of || 14, level: top };
 }
 
 function renderGames() {
@@ -543,8 +547,8 @@ function renderGames() {
   return `
   <section class="card game-card">
     <div class="gc-top"><span class="gc-ico">🍎</span><div><h2>Полезное или вредное?</h2>
-      <p class="small muted">Медок и Пуся подкидывают еду. Полезное ловим и едим, от вредного отказываемся. Чем дальше, тем быстрее.</p></div></div>
-    ${c.n ? `<p class="small muted">Сыграно ${c.n} ${plural(c.n, 'раз', 'раза', 'раз')}${c.best !== null ? ` · рекорд ${c.best} из 14` : ''}</p>` : ''}
+      <p class="small muted">Медок и Пуся подкидывают еду. Полезное ловим и едим, от вредного отказываемся. Три уровня: Легко, Средне и Сложно с хитрыми продуктами.</p></div></div>
+    ${c.n ? `<p class="small muted">Сыграно ${c.n} ${plural(c.n, 'раз', 'раза', 'раз')}${c.best !== null ? ` · рекорд ${c.best} из ${c.of}${c.level > 1 ? ` (${c.level === 3 ? 'сложно' : 'средне'})` : ''}` : ''}</p>` : ''}
     <div class="gc-btns">
       <button type="button" class="pill-btn" data-action="game-catch" data-mode="pusya">🐒 Играть с Пусей</button>
       <button type="button" class="pill-btn soft" data-action="game-catch" data-mode="medok">🦔 Играть с Медком</button>
@@ -595,6 +599,8 @@ function startCatch(mode) {
   playCatch({
     players,
     hero: heroFor,
+    startLevel: state.profile.catchLevel || 1,
+    onLevel: (l) => { state.profile.catchLevel = l; save(state); },
     onFinish: (r) => {
       state.games.push({ id: uid(), ts: Date.now(), ...r });
       commit();

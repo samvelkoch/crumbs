@@ -242,3 +242,21 @@ test('количество еды: подписи и очистка', async () =
   assert.deepEqual(cleanQty({ apple: { n: 2, u: 'pc' }, x: { n: 1, u: 'pc' }, choco: { n: -1, u: 'zzz' } }, ['apple', 'choco']), { apple: { n: 2, u: 'pc' } });
   assert.equal(cleanQty({}, ['apple']), undefined);
 });
+
+test('«Полезное или вредное?»: уровни, хитрые продукты и рецепты', async () => {
+  globalThis.window ??= {};
+  const { CATCH_FOODS, CATCH_LEVELS, catchSequence } = await import('../js/games.js');
+  const { RECIPES } = await import('../js/kitchen.js');
+  assert.ok(CATCH_FOODS.length >= 80);
+  assert.equal(new Set(CATCH_FOODS.map((f) => f.n)).size, CATCH_FOODS.length);
+  for (const l of CATCH_LEVELS) {
+    const seq = catchSequence(l.n, l.tricky);
+    assert.equal(seq.length, l.n);
+    assert.equal(new Set(seq.map((f) => f.n)).size, l.n);
+    assert.equal(seq.filter((f) => f.t).length, l.tricky);
+    assert.equal(seq.filter((f) => f.ok).length, Math.ceil(l.n / 2));
+  }
+  assert.ok(CATCH_FOODS.filter((f) => f.t).every((f) => f.why));
+  assert.ok(RECIPES.length >= 40);
+  for (const r of RECIPES) assert.doesNotMatch(`${r.who} ${r.ask} ${r.meaning}`, /бабуш|дедуш|(^|[^а-яё])брат|сестр/i);
+});
