@@ -1,7 +1,7 @@
 // Радар Медка: какие продукты и улики чаще встречаются перед плохими замерами кожи.
 // Сравнивает замеры «после продукта» и «без него», а не просто средний балл после еды.
 import { HOUR, dayKey, dayStart, addDays } from './dates.js';
-import { expandFamilies, foodFamilies } from './foods.js';
+import { expandFamilies, expandParts, foodFamilies } from './foods.js';
 
 export const ZONES = [
   { id: 'face', label: 'Лицо', emoji: '🙂' },
@@ -27,10 +27,15 @@ export function skinScore(e, zone = 'max') {
   return Math.max(z.face ?? 0, z.neck ?? 0, z.hands ?? 0);
 }
 
+// Где ели: школьная еда и еда в гостях проверяются как отдельная улика
+const PLACE_FACTOR = { school: 'school', guest: 'guest', cafe: 'cafe' };
+
 // Ключи, которыми запись «помечает» окно: продукты, семейства, улики
 export function entryKeys(e) {
-  if (e.type === 'meal') return [...e.foods, ...expandFamilies(e.foods)];
+  if (e.type === 'meal') return [...expandParts(e.foods), ...expandFamilies(e.foods), ...(PLACE_FACTOR[e.place] ? ['f:' + PLACE_FACTOR[e.place]] : [])];
   if (e.type === 'factor') return e.factors.map((f) => 'f:' + f);
+  // сладкий напиток тоже улика: кола, баббл ти, сок
+  if (e.type === 'water' && e.foods?.length) return [...expandParts(e.foods), ...expandFamilies(e.foods)];
   return [];
 }
 
@@ -91,7 +96,7 @@ export function analyze(entries, opts = {}) {
   const o = { ...DEFAULTS, ...opts };
   const zone = o.zone || 'max';
   const skins = entries.filter((e) => e.type === 'skin').sort((a, b) => a.ts - b.ts);
-  const tagged = entries.filter((e) => e.type === 'meal' || e.type === 'factor').sort((a, b) => a.ts - b.ts);
+  const tagged = entries.filter((e) => e.type === 'meal' || e.type === 'factor' || (e.type === 'water' && e.foods?.length)).sort((a, b) => a.ts - b.ts);
 
   // Двумя указателями собираем окно [ts - maxLag, ts - minLag] для каждого замера
   const obs = [];

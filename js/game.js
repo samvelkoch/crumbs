@@ -1,7 +1,7 @@
 // Игровой слой: звёзды, ранги, значки, тарелка дня, серии.
 // Всё считается из записей, поэтому звёзды не «пропадают» на следующий день.
 import { dayKey, addDays } from './dates.js';
-import { foodSector } from './foods.js';
+import { expandParts, foodSector, plateSectors } from './foods.js';
 
 export const PLATE = ['veg', 'prot', 'carb', 'fruit'];
 export const WATER_GOAL = 6;
@@ -31,16 +31,19 @@ export function plateOf(dayEntries) {
   const s = new Set();
   for (const e of dayEntries || []) {
     if (e.type !== 'meal') continue;
-    for (const f of e.foods) {
-      const sec = foodSector(f);
-      if (PLATE.includes(sec)) s.add(sec);
-    }
+    for (const f of e.foods) for (const sec of plateSectors(f)) if (PLATE.includes(sec)) s.add(sec);
   }
   return s;
 }
 
+// Напитки: вода и напитки без сахара идут в цель дня, сладкие считаются отдельно.
+// Старые записи без drink — это вода.
+export const isSweet = (e) => e.type === 'water' && e.drink === 'sweet';
 export function waterOf(dayEntries) {
-  return (dayEntries || []).reduce((n, e) => n + (e.type === 'water' ? e.n || 1 : 0), 0);
+  return (dayEntries || []).reduce((n, e) => n + (e.type === 'water' && !isSweet(e) ? e.n || 1 : 0), 0);
+}
+export function sweetOf(dayEntries) {
+  return (dayEntries || []).filter(isSweet);
 }
 
 export function streak(days, today) {
@@ -71,7 +74,7 @@ export function stars(state) {
     for (const e of list) {
       if (e.type === 'meal' || e.type === 'skin') total += 10;
       else if (e.type === 'factor') total += 5;
-      else if (e.type === 'water') water += e.n || 1;
+      else if (e.type === 'water' && !isSweet(e)) water += e.n || 1;
     }
     total += Math.min(water, WATER_STAR_CAP) * 2;
     if (plateOf(list).size === 4) total += 20;
@@ -125,7 +128,7 @@ export function earnedBadges(state) {
     const set = new Set();
     for (let i = 0; i < 7; i++) {
       for (const e of days.get(addDays(end, -i)) || []) {
-        if (e.type === 'meal') for (const f of e.foods) if (['veg', 'fruit'].includes(foodSector(f))) set.add(f);
+        if (e.type === 'meal') for (const f of expandParts(e.foods)) if (['veg', 'fruit'].includes(foodSector(f))) set.add(f);
       }
     }
     if (set.size >= 8) { got.add('rainbow'); break; }

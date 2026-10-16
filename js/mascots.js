@@ -74,18 +74,18 @@ function medokFur(cx, cy, rx, ry) {
   const r = rng(7);
   let light = '';
   let dark = '';
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 190; i++) {
     const a = r() * Math.PI * 2;
     const d = Math.sqrt(r()) * 0.95;
     const x = cx + Math.cos(a) * rx * d;
     const y = cy + Math.sin(a) * ry * d;
     const ang = a + (r() - 0.5) * 1.6;
-    const len = 3 + r() * 5;
+    const len = 2.5 + r() * 3.5;
     const seg = `M${x.toFixed(1)},${y.toFixed(1)} l${(Math.cos(ang) * len).toFixed(1)},${(Math.sin(ang) * len).toFixed(1)}`;
     if (i % 3 === 0) dark += seg; else light += seg;
   }
-  return `<path d="${light}" stroke="#b5aa76" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
-    <path d="${dark}" stroke="#1f1d19" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>`;
+  return `<path d="${light}" stroke="#bfb27c" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+    <path d="${dark}" stroke="#1f1d19" stroke-width="2" stroke-linecap="round" opacity=".5"/>`;
 }
 
 // Кудрявая мордочка: мелкие колечки по бежевому
@@ -116,9 +116,11 @@ const DEERSTALKER = `<g class="m-hat"><path d="M40,30 Q42,4 70,2 Q98,4 100,30 Z"
   <path d="M50,28 Q52,8 70,6 M90,28 Q88,8 70,6 M44,18 H96 M42,25 H98" stroke="#92400e" stroke-width="1.6" fill="none" opacity=".7"/>
   <ellipse cx="70" cy="30" rx="36" ry="6" fill="#92400e"/><circle cx="70" cy="3" r="3.5" fill="#78350f"/></g>`;
 
-// Медок лежит: по ширине как Пуся, по высоте примерно вдвое ниже. Общий viewBox с запасом сверху под шляпу.
-const MEDOK_VB = '0 -12 140 102';
-const medokH = (size) => (size * 102) / 140;
+// Медок по фото игрушки: пушистый купол-капюшон, большая бежевая мордочка до самого низа,
+// крупный блестящий нос-бусина и маленькие глаза-бусины по бокам от него.
+// Ниже и меньше Пуси. Общий viewBox с запасом сверху под шляпу.
+const MEDOK_VB = '0 -14 140 120';
+const medokH = (size) => (size * 120) / 140;
 
 export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
   if (style === 'toon') return medokToon(mood, size);
@@ -127,26 +129,28 @@ export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
   const blush = mood === 'happy' || mood === 'cheer';
   return `<svg class="mascot medok mood-${mood}" width="${size}" height="${medokH(size)}" viewBox="${MEDOK_VB}" role="img" aria-label="Ёж Медок">
   <defs>
-    <radialGradient id="${id}b" cx="50%" cy="30%" r="75%"><stop offset="0" stop-color="#6b6a52"/><stop offset=".55" stop-color="#46443a"/><stop offset="1" stop-color="#2c2a24"/></radialGradient>
-    <radialGradient id="${id}n" cx="35%" cy="30%" r="65%"><stop offset="0" stop-color="#4b4b4b"/><stop offset=".5" stop-color="#111"/><stop offset="1" stop-color="#000"/></radialGradient>
-    <radialGradient id="${id}f" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#dcc6a6"/><stop offset="1" stop-color="#c4ab88"/></radialGradient>
+    <radialGradient id="${id}b" cx="50%" cy="28%" r="78%"><stop offset="0" stop-color="#7a7556"/><stop offset=".5" stop-color="#4c493b"/><stop offset="1" stop-color="#2a2822"/></radialGradient>
+    <radialGradient id="${id}n" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#555"/><stop offset=".45" stop-color="#111"/><stop offset="1" stop-color="#000"/></radialGradient>
+    <radialGradient id="${id}f" cx="50%" cy="45%" r="62%"><stop offset="0" stop-color="#e2cfb1"/><stop offset="1" stop-color="#c7b08e"/></radialGradient>
   </defs>
-  <ellipse cx="70" cy="84" rx="48" ry="5" fill="rgba(0,0,0,.13)"/>
+  <ellipse cx="70" cy="101" rx="46" ry="5" fill="rgba(0,0,0,.13)"/>
   ${sparkles(mood === 'cheer')}
   <g class="m-body">
-    <path d="${fuzz(70, 48, 50, 34, 34, 0.08, 3, 0.12)}" fill="url(#${id}b)"/>
-    ${medokFur(70, 44, 44, 28)}
-    <path d="M114,60 l7,4 l-3,6 l-6,-3z" fill="#1c1917"/>
-    <path d="${fuzz(70, 62, 22, 18, 20, 0.06, 11)}" fill="url(#${id}f)"/>
-    ${curls(70, 62, 20, 15, 24, 5)}
-    ${blush ? '<ellipse cx="55" cy="69" rx="4" ry="2.3" fill="#f4a3a3" opacity=".7"/><ellipse cx="85" cy="69" rx="4" ry="2.3" fill="#f4a3a3" opacity=".7"/>' : ''}
-    ${eyes(mood, 61, 79, 58, 3, '#111', true)}
-    <ellipse cx="70" cy="64" rx="7.5" ry="6.5" fill="url(#${id}n)"/>
-    <ellipse cx="67.4" cy="61.6" rx="2.6" ry="1.6" fill="#fff" opacity=".85"/>
-    ${mouth(mood, 70, 74, 4.5, '#7a6248', 1.6)}
+    <ellipse cx="38" cy="98" rx="8" ry="4.5" fill="#3a2c22"/><ellipse cx="102" cy="98" rx="8" ry="4.5" fill="#3a2c22"/>
+    <clipPath id="${id}c"><path d="${fuzz(70, 60, 46, 39, 36, 0.08, 3, 0.14)}"/></clipPath>
+    <path d="${fuzz(70, 60, 46, 39, 36, 0.08, 3, 0.14)}" fill="url(#${id}b)"/>
+    <g clip-path="url(#${id}c)">${medokFur(70, 50, 44, 34)}</g>
+    <path d="${fuzz(70, 76, 29, 23, 22, 0.05, 11, 0.1)}" fill="url(#${id}f)"/>
+    ${curls(70, 76, 26, 19, 30, 5)}
+    <circle cx="70" cy="53.5" r="1.8" fill="#dc2626"/>
+    ${blush ? '<ellipse cx="50" cy="86" rx="4.5" ry="2.4" fill="#f4a3a3" opacity=".6"/><ellipse cx="90" cy="86" rx="4.5" ry="2.4" fill="#f4a3a3" opacity=".6"/>' : ''}
+    ${eyes(mood, 54, 86, 75, 4, '#111', true)}
+    <ellipse cx="70" cy="80" rx="10" ry="9" fill="url(#${id}n)"/>
+    <ellipse cx="66.5" cy="76.5" rx="3.2" ry="2" fill="#fff" opacity=".85"/>
+    ${mouth(mood, 70, 92, 4, '#7a6248', 1.5)}
   </g>
-  ${det ? `<g transform="translate(0 -14)">${DEERSTALKER}</g>` : ''}
-  ${mood === 'think' ? MAGNIFIER(122, 22) : det ? MAGNIFIER(124, 62, 0.8) : ''}
+  ${det ? `<g transform="translate(0 -6)">${DEERSTALKER}</g>` : ''}
+  ${mood === 'think' ? MAGNIFIER(124, 34) : det ? MAGNIFIER(124, 76, 0.8) : ''}
 </svg>`;
 }
 
