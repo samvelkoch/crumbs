@@ -793,7 +793,7 @@
         <span style="font-size:0.8rem; font-weight:800; color:#6d28d9; background:#f3e8ff; padding:4px 10px; border-radius:999px;" id="plateStatusBadge">Собери все 4 элемента за день!</span>
       </div>
       <p style="font-size:0.82rem; color:var(--muted); margin-top:4px;">
-        Когда в меню за день есть и овощи, и белок, и гарнир, и чистая вода — у организма максимум энергии, а коже легче оставаться спокойной:
+        Когда в меню за день есть и овощи, и белок, и гарнир, и фрукты — тарелка становится супер-тарелкой:
       </p>
       <div class="plate-grid">
         <div class="plate-sector" id="sec-veg">
@@ -827,7 +827,7 @@
           <span style="font-weight:900; font-size:0.95rem; color:#0284c7;" id="waterCountLabel">0 / 6 стаканов</span>
         </div>
         <p style="font-size:0.8rem; color:#0369a1; margin-top:4px;">
-          Нажимай на стакан каждый раз, когда пьёшь воду. Медок напоминает: вода помогает выводить всё лишнее!
+          Нажимай на стакан каждый раз, когда пьёшь воду. Медок напоминает: наша цель — 6 стаканов за день!
         </p>
         <div class="glasses-row" id="glassesRow"></div>
       </div>
@@ -858,10 +858,16 @@
         <span style="font-size:0.76rem; font-weight:700; color:var(--muted);">Шкала от 0 (чисто) до 10 (сильная реакция)</span>
       </div>
       <div class="chart-wrap">
-        <div class="chart-legend">
-          <span class="legend-item"><span class="legend-dot" style="background:#ec4899;"></span> Лицо</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Шея</span>
-          <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> Руки</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <div class="chart-legend" style="margin-bottom:0;">
+            <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6;"></span> Лицо</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Шея</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#ec4899;"></span> Руки</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="pet-switch-btn active" id="period-all" onclick="setChartPeriod('all')">Все дни</button>
+            <button type="button" class="pet-switch-btn" id="period-last5" onclick="setChartPeriod('last5')">Последние 5 записей</button>
+          </div>
         </div>
         <div id="chartContainer" style="width:100%; overflow-x:auto;"></div>
         <div id="chartPointInfo" style="margin-top:8px; font-size:0.81rem; font-weight:700; color:#4c1d95; background:#f3e8ff; padding:8px 12px; border-radius:10px;">
@@ -1153,27 +1159,27 @@
     'какао': {
       icon: '🍵',
       title: 'Альтернатива какао',
-      desc: 'Какао часто усиливает зуд на шее и лице. Медок советует попробовать тёплый ромашковый или фруктовый чай с ложечкой домашнего пюре.'
+      desc: 'Давай проверим, как чувствует себя кожа, если пару дней обойтись без какао. А пока Медок предлагает тёплый фруктовый чай или компот.'
     },
     'лимонад': {
       icon: '🫐',
       title: 'Супер-напиток вместо газировки',
-      desc: 'В лимонаде много красителей и сахара. Давай сделаем «коктейль детектива»: чистая вода со льдом, кусочками яблока или ягодами голубики!'
+      desc: 'Давай сделаем «коктейль детектива»: чистая вода со льдом, кусочками яблока или ягодами голубики. Выглядит как настоящий лимонад!'
     },
     'конфеты': {
       icon: '🍏',
       title: 'Обмен конфет на приключение',
-      desc: 'Когда на коже покраснение, лишний сахар мешает ей восстановиться. Давай заменим конфеты на хрустящие яблочные дольки и интересный квест!'
+      desc: 'Давай проверим, как кожа чувствует себя пару дней без конфет. А взамен — хрустящие яблочные дольки и интересный квест!'
     },
     'клубника': {
       icon: '🍐',
       title: 'Ягодная рокировка',
-      desc: 'Клубника нередко вызывает реакцию на щеках. Пока кожа успокаивается, её отлично заменят спелая груша, банан или голубика.'
+      desc: 'Давай проверим, как кожа чувствует себя без клубники. На время эксперимента её отлично заменят спелая груша, банан или голубика.'
     },
     'цитрусовые': {
       icon: '🍌',
       title: 'Мягкие фрукты вместо цитрусовых',
-      desc: 'Мандарины и апельсины могут щипать кожу вокруг губ и на кистях рук. Зелёное яблоко или банан намного дружелюбнее к коже!'
+      desc: 'Давай проверим, как кожа на лице и руках чувствует себя без мандаринов и апельсинов. Зелёное яблоко или банан — отличная замена на время эксперимента!'
     },
     'снеки': {
       icon: '🥒',
@@ -1192,17 +1198,17 @@
     {
       speaker: '🦔 Медок делится наблюдением:',
       tag: '💧 Водный баланс',
-      text: '«Чистая вода — лучший помощник детектива! Когда ты выпиваешь 5–6 стаканов воды за день, организму гораздо проще справляться с любыми аллергенами.»'
+      text: '«Чистая вода — лучший напиток детектива! Наша цель — 5–6 стаканов за день. Отмечай каждый стакан, и копилка звёзд будет расти!»'
     },
     {
       speaker: '🦔 Медок и 🐒 Пуся напоминают:',
       tag: '🍽️ Правило супер-тарелки',
-      text: '«Самая крутая тарелка — разноцветная: гарнир (рис, гречка или паста) даёт энергию, мясо или рыба — силу, а свежие овощи (огурец, брокколи) помогают коже оставаться чистой!»'
+      text: '«Самая крутая тарелка — разноцветная: гарнир (рис, гречка или паста) даёт энергию, мясо или рыба — силу, а свежие овощи (огурец, брокколи) добавляют хруста и цвета!»'
     },
     {
-      speaker: '🐒 Пуся шепчет на ушко:',
+      speaker: '🐒 Пуся делится секретом:',
       tag: '🥒 Хрустящий перекус',
-      text: '«Когда хочется чем-нибудь похрустеть между уроками и играми, попробуй огуречные кружочки или морковные палочки. Медок сам обожает так хрустеть!»'
+      text: '«Когда хочется чем-нибудь похрустеть между уроками и играми, попробуй огуречные кружки или морковные палочки. Медок сам обожает так хрустеть!»'
     },
     {
       speaker: '🦔 Медок объясняет радар:',
@@ -1211,12 +1217,41 @@
     }
   ];
 
-  // Демо-данные за 3 дня для наглядного графика и аналитики с первой секунды
-  function getTodayStr(offsetDays = 0) {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    return d.toISOString().split('T')[0];
+  // Все даты и время — по Будапешту, независимо от часового пояса устройства
+  const APP_TZ = 'Europe/Budapest';
+  const TZ_FMT = new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  });
+
+  function nowInAppTz() {
+    const p = Object.fromEntries(TZ_FMT.formatToParts(new Date()).map(x => [x.type, x.value]));
+    return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
   }
+
+  function getTodayStr(offsetDays = 0) {
+    const today = nowInAppTz().date;
+    if (!offsetDays) return today;
+    const d = new Date(today + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Время записи как число для сортировки и окна 24ч (дата+время записи — уже по Будапешту)
+  function entryTs(e) {
+    return Date.parse(`${e.date}T${e.time || '00:00'}:00Z`);
+  }
+
+  function sortEntriesDesc(list) {
+    return list.sort((a, b) => entryTs(b) - entryTs(a));
+  }
+
+  // Экранирование пользовательского текста перед вставкой в HTML
+  function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  // Демо-данные за 3 дня для наглядного графика и аналитики с первой секунды
 
   const DEMO_DATA = [
     { id: 101, date: getTodayStr(-2), time: '08:30', mealType: 'Завтрак', foods: ['овсянка', 'банан'], drinks: ['вода', 'чай'], face: 1, neck: 0, hands: 1, notes: 'Спокойное утро, сбалансированный завтрак' },
@@ -1230,18 +1265,36 @@
 
   let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
   if (!entries) {
-    entries = DEMO_DATA;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    entries = DEMO_DATA.map(e => ({ ...e }));
+  }
+  sortEntriesDesc(entries);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+
+  // Вода по дням: { "YYYY-MM-DD": количество стаканов }
+  const WATER_GOAL = 6;
+  const WATER_MAX = 10;
+  let waterByDay = JSON.parse(localStorage.getItem(WATER_KEY) || 'null') || {};
+  if (typeof waterByDay.date === 'string') {
+    // Миграция старого формата { date, glasses }
+    waterByDay = { [waterByDay.date]: Number(waterByDay.glasses) || 0 };
+  }
+  localStorage.setItem(WATER_KEY, JSON.stringify(waterByDay));
+
+  function getWaterToday() {
+    return waterByDay[getTodayStr(0)] || 0;
   }
 
-  let waterState = JSON.parse(localStorage.getItem(WATER_KEY) || 'null');
-  const todayKey = getTodayStr(0);
-  if (!waterState || waterState.date !== todayKey) {
-    waterState = { date: todayKey, glasses: 3 };
-    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+  function setWaterToday(n) {
+    waterByDay[getTodayStr(0)] = Math.max(0, Math.min(WATER_MAX, n));
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterByDay));
+  }
+
+  function getWaterTotal() {
+    return Object.values(waterByDay).reduce((sum, n) => sum + (Number(n) || 0), 0);
   }
 
   let currentMeal = 'Завтрак';
+  let chartPeriod = 'all';
   let tipIndex = 0;
 
   // Инициализация категорий продуктов
@@ -1285,11 +1338,12 @@
   // Трекер стаканов воды
   function renderWaterTracker() {
     const row = document.getElementById('glassesRow');
-    const count = waterState.glasses;
-    document.getElementById('waterCountLabel').textContent = `${count} / 6 стаканов`;
+    const count = getWaterToday();
+    document.getElementById('waterCountLabel').textContent = `${count} / ${WATER_GOAL} стаканов`;
 
     let html = '';
-    for (let i = 1; i <= 6; i++) {
+    const shown = Math.max(WATER_GOAL, Math.min(WATER_MAX, count + 1));
+    for (let i = 1; i <= shown; i++) {
       const drank = i <= count ? 'drank' : '';
       html += `<button type="button" class="glass-btn ${drank}" onclick="setWaterGlasses(${i})" title="Отметить ${i} ст. воды">💧</button>`;
     }
@@ -1297,28 +1351,22 @@
 
     const hint = document.getElementById('waterHint');
     if (count === 0) hint.textContent = 'Начни день со стакана чистой воды!';
-    else if (count < 4) hint.textContent = `Хорошее начало! Ещё ${6 - count} ст. до дневной цели.`;
-    else if (count < 6) hint.textContent = 'Отличный водный баланс! Почти у цели ✨';
+    else if (count < 4) hint.textContent = `Хорошее начало! Ещё ${WATER_GOAL - count} ст. до дневной цели.`;
+    else if (count < WATER_GOAL) hint.textContent = 'Отличный водный баланс! Почти у цели ✨';
     else hint.textContent = 'Супер-гидратация! Медок и Пуся гордятся тобой 🏆';
   }
 
   function setWaterGlasses(n) {
-    if (waterState.glasses === n) {
-      waterState.glasses = n - 1;
-    } else {
-      waterState.glasses = n;
-    }
-    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
-    renderWaterTracker();
+    setWaterToday(getWaterToday() === n ? n - 1 : n);
+    renderAll();
     updateSmartMascotSpeech();
   }
 
   function addWaterGlass() {
-    if (waterState.glasses < 8) {
-      waterState.glasses += 1;
-      localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
-      renderWaterTracker();
-      showToast('💧 +1 стакан чистой воды! Отличная привычка!');
+    if (getWaterToday() < WATER_MAX) {
+      setWaterToday(getWaterToday() + 1);
+      renderAll();
+      showToast('💧 +1 стакан чистой воды! +5 звёзд!');
       updateSmartMascotSpeech();
     }
   }
@@ -1387,10 +1435,10 @@
       title.textContent = '🦔 Медок и 🐒 Пуся поддерживают тебя:';
       tag.textContent = '🤝 Дружеский план';
       text.textContent = '«Мы видим, что коже сейчас непросто. Ничего страшного, мы рядом! Давай сегодня устроим передышку от сладостей и снеков — заменим шоколад на весёлые шалости, настольную игру или печёное яблоко, и попьём побольше чистой воды!»';
-    } else if (waterState.glasses < 2) {
+    } else if (getWaterToday() < 2) {
       title.textContent = '🦔 Медок шепчет по секрету:';
       tag.textContent = '💧 Время освежиться';
-      text.textContent = '«Эй, напарник! Сегодня в копилке пока маловато чистой воды. Давай нальём стаканчик прямо сейчас и нажмём на капельку ниже — коже на лице и руках это очень помогает!»';
+      text.textContent = '«Эй, напарник! Сегодня в копилке пока маловато чистой воды. Давай нальём стакан прямо сейчас и отметим его ниже!»';
     } else if (plate.vegFound.length === 0) {
       title.textContent = '🐒 Пуся подаёт отличную идею:';
       tag.textContent = '🥒 Хрустящий баланс';
@@ -1512,13 +1560,12 @@
     };
 
     entries.push(newEntry);
-    entries.sort((a, b) => new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`));
+    sortEntriesDesc(entries);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 
-    // Если в напитках отмечена вода — автоматически прибавим стакан воды
-    if (drinks.includes('вода') && waterState.glasses < 6) {
-      waterState.glasses += 1;
-      localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    // Если в напитках отмечена вода в записи за сегодня — прибавим стакан воды
+    if (drinks.includes('вода') && newEntry.date === getTodayStr(0)) {
+      setWaterToday(getWaterToday() + 1);
     }
 
     document.getElementById('foodInput').value = '';
@@ -1543,15 +1590,15 @@
   // Алгоритм корреляции в окне 24 часов
   function analyzeSuspects() {
     const stats = {};
-    const asc = [...entries].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+    const asc = [...entries].sort((a, b) => entryTs(a) - entryTs(b));
 
     asc.forEach((entry, idx) => {
       const items = [...new Set([...entry.foods, ...entry.drinks])];
-      const t0 = new Date(`${entry.date}T${entry.time}`).getTime();
+      const t0 = entryTs(entry);
       let maxF = entry.face, maxN = entry.neck, maxH = entry.hands;
 
       for (let j = idx; j < asc.length; j++) {
-        const tj = new Date(`${asc[j].date}T${asc[j].time}`).getTime();
+        const tj = entryTs(asc[j]);
         const hrs = (tj - t0) / 3600000;
         if (hrs >= 0 && hrs <= 24) {
           maxF = Math.max(maxF, asc[j].face);
@@ -1590,7 +1637,8 @@
   // Построение интерактивного SVG-графика динамики симптомов
   function renderChart() {
     const container = document.getElementById('chartContainer');
-    const asc = [...entries].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+    const allAsc = [...entries].sort((a, b) => entryTs(a) - entryTs(b));
+    const asc = chartPeriod === 'last5' ? allAsc.slice(-5) : allAsc;
 
     if (asc.length === 0) {
       container.innerHTML = `<div style="padding:24px; text-align:center; color:var(--muted);">Добавь записи в дневник, чтобы увидеть график динамики симптомов 📈</div>`;
@@ -1619,7 +1667,7 @@
     const xLabels = asc.map((e, i) => {
       const x = getX(i).toFixed(1);
       const shortDate = e.date.slice(5);
-      return `<text x="${x}" y="${H - 10}" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">${shortDate} ${e.time}</text>`;
+      return `<text x="${x}" y="${H - 10}" font-size="9.5" font-weight="700" fill="#475569" text-anchor="middle">${esc(shortDate)} ${esc(e.time)}</text>`;
     }).join('');
 
     // Интерактивные точки
@@ -1630,9 +1678,9 @@
       const yH = getY(e.hands).toFixed(1);
       return `
         <g style="cursor:pointer;" onclick="inspectChartPoint(${e.id})">
-          <circle cx="${x}" cy="${yH}" r="5" fill="#8b5cf6" stroke="#fff" stroke-width="2"/>
+          <circle cx="${x}" cy="${yH}" r="5" fill="#ec4899" stroke="#fff" stroke-width="2"/>
           <circle cx="${x}" cy="${yN}" r="5" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
-          <circle cx="${x}" cy="${yF}" r="5.5" fill="#ec4899" stroke="#fff" stroke-width="2"/>
+          <circle cx="${x}" cy="${yF}" r="5.5" fill="#8b5cf6" stroke="#fff" stroke-width="2"/>
         </g>
       `;
     }).join('');
@@ -1640,13 +1688,20 @@
     container.innerHTML = `
       <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; min-width:440px; display:block;">
         ${gridLines}
-        <path d="${makePath('hands')}" fill="none" stroke="#8b5cf6" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="${makePath('hands')}" fill="none" stroke="#ec4899" stroke-width="2.6" stroke-linecap="round"/>
         <path d="${makePath('neck')}" fill="none" stroke="#f59e0b" stroke-width="2.6" stroke-linecap="round"/>
-        <path d="${makePath('face')}" fill="none" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+        <path d="${makePath('face')}" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
         ${pointsHtml}
         ${xLabels}
       </svg>
     `;
+  }
+
+  function setChartPeriod(period) {
+    chartPeriod = period;
+    document.getElementById('period-all').classList.toggle('active', period === 'all');
+    document.getElementById('period-last5').classList.toggle('active', period === 'last5');
+    renderChart();
   }
 
   function inspectChartPoint(id) {
@@ -1655,8 +1710,8 @@
     const infoBox = document.getElementById('chartPointInfo');
     const items = [...entry.foods, ...entry.drinks].join(', ') || 'только замер симптомов';
     infoBox.innerHTML = `
-      📅 <b>${entry.date} в ${entry.time} (${entry.mealType})</b> — Еда/напитки: <b>${items}</b>.<br>
-      Реакция кожи: Лицо <b>${entry.face}/10</b> · Шея <b>${entry.neck}/10</b> · Руки <b>${entry.hands}/10</b>. ${entry.notes ? `<i>(${entry.notes})</i>` : ''}
+      📅 <b>${esc(entry.date)} в ${esc(entry.time)} (${esc(entry.mealType)})</b> — Еда/напитки: <b>${esc(items)}</b>.<br>
+      Реакция кожи: Лицо <b>${entry.face}/10</b> · Шея <b>${entry.neck}/10</b> · Руки <b>${entry.hands}/10</b>. ${entry.notes ? `<i>(${esc(entry.notes)})</i>` : ''}
     `;
   }
 
@@ -1738,19 +1793,19 @@
 
   function confirmClearAll() {
     entries = [];
-    waterState = { date: getTodayStr(0), glasses: 0 };
+    waterByDay = {};
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterByDay));
     closeResetModal();
     renderAll();
     showToast('✨ Журнал очищен для новых записей!');
   }
 
   function confirmLoadDemo() {
-    entries = [...DEMO_DATA];
-    waterState = { date: getTodayStr(0), glasses: 4 };
+    entries = sortEntriesDesc(DEMO_DATA.map(e => ({ ...e })));
+    waterByDay = { [getTodayStr(0)]: 4 };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    localStorage.setItem(WATER_KEY, JSON.stringify(waterState));
+    localStorage.setItem(WATER_KEY, JSON.stringify(waterByDay));
     closeResetModal();
     renderAll();
     showToast('📚 Демо-пример с графиками загружен!');
@@ -1761,7 +1816,7 @@
     const plate = renderPlateBalance();
     renderChart();
 
-    const stars = entries.length * 10 + waterState.glasses * 5;
+    const stars = entries.length * 10 + getWaterTotal() * 5;
     document.getElementById('starCount').textContent = stars;
     const rankEl = document.getElementById('detectiveRank');
     if (stars < 40) rankEl.textContent = '🌱 Стажёр агентства';
@@ -1773,7 +1828,7 @@
     const achBox = document.getElementById('achievementsBox');
     const badges = [
       { unlocked: entries.length >= 1, icon: '🥇', title: 'Первая улика' },
-      { unlocked: waterState.glasses >= 5, icon: '💧', title: 'Мастер водного баланса' },
+      { unlocked: Object.values(waterByDay).some(n => n >= 5), icon: '💧', title: 'Мастер водного баланса' },
       { unlocked: plate.vegFound.length > 0 && plate.protFound.length > 0 && plate.carbFound.length > 0, icon: '🥗', title: 'Сбалансированная тарелка' },
       { unlocked: entries.some(e => e.face <= 1 && e.neck <= 1 && e.hands <= 1), icon: '✨', title: 'Спокойная кожа' },
       { unlocked: entries.length >= 6, icon: '🕵️‍♀️', title: 'Шерлок и Команда' }
@@ -1795,10 +1850,10 @@
       suspBox.innerHTML = listToShow.slice(0, 5).map(s => {
         const pct = Math.min(100, Math.round((s.avgPeak / 10) * 100));
         return `
-          <div class="suspect-card" onclick="filterByFood('${s.name}')" title="Нажми, чтобы отфильтровать все записи с этим продуктом">
+          <div class="suspect-card" data-food="${esc(s.name)}" onclick="filterByFood(this.dataset.food)" title="Нажми, чтобы отфильтровать все записи с этим продуктом">
             <div class="suspect-top">
               <div style="font-weight:800; font-size:0.93rem; text-transform:capitalize;">
-                🔎 ${s.name} <span style="font-weight:600; color:var(--muted); font-size:0.76rem;">(встречалось: ${s.count})</span>
+                🔎 ${esc(s.name)} <span style="font-weight:600; color:var(--muted); font-size:0.76rem;">(встречалось: ${s.count})</span>
               </div>
               <span class="badge-score ${getBadgeColor(s.avgPeak)}">Пик: ${s.avgPeak}/10</span>
             </div>
@@ -1818,8 +1873,8 @@
       safeBox.innerHTML = `<span style="font-size:0.8rem; color:var(--muted);">Продолжай вести записи, чтобы пополнить зелёный список</span>`;
     } else {
       safeBox.innerHTML = safe.slice(0, 8).map(item => `
-        <span class="chip" style="background:#ecfdf5; border-color:#10b981; color:#065f46;" onclick="filterByFood('${item.name}')">
-          ✅ ${item.name} (${item.avgPeak})
+        <span class="chip" style="background:#ecfdf5; border-color:#10b981; color:#065f46;" data-food="${esc(item.name)}" onclick="filterByFood(this.dataset.food)">
+          ✅ ${esc(item.name)} (${item.avgPeak})
         </span>
       `).join('');
     }
@@ -1836,16 +1891,16 @@
     } else {
       tbody.innerHTML = filtered.map(e => `
         <tr>
-          <td><b>${e.date}</b><br><span style="font-size:0.76rem; color:var(--muted);">${e.time}</span></td>
-          <td><b>${e.mealType}</b></td>
+          <td><b>${esc(e.date)}</b><br><span style="font-size:0.76rem; color:var(--muted);">${esc(e.time)}</span></td>
+          <td><b>${esc(e.mealType)}</b></td>
           <td>
-            ${e.foods.map(f => `<span class="food-pill" onclick="filterByFood('${f}')">🍽️ ${f}</span>`).join('')}
-            ${e.drinks.map(d => `<span class="drink-pill" onclick="filterByFood('${d}')">🥤 ${d}</span>`).join('')}
+            ${e.foods.map(f => `<span class="food-pill" data-food="${esc(f)}" onclick="filterByFood(this.dataset.food)">🍽️ ${esc(f)}</span>`).join('')}
+            ${e.drinks.map(d => `<span class="drink-pill" data-food="${esc(d)}" onclick="filterByFood(this.dataset.food)">🥤 ${esc(d)}</span>`).join('')}
           </td>
           <td><span class="badge-score ${getBadgeColor(e.face)}">${e.face}</span></td>
           <td><span class="badge-score ${getBadgeColor(e.neck)}">${e.neck}</span></td>
           <td><span class="badge-score ${getBadgeColor(e.hands)}">${e.hands}</span></td>
-          <td style="color:var(--muted); font-size:0.82rem;">${e.notes || '—'}</td>
+          <td style="color:var(--muted); font-size:0.82rem;">${esc(e.notes) || '—'}</td>
           <td><button type="button" class="btn-small" onclick="deleteEntry(${e.id})">🗑️</button></td>
         </tr>
       `).join('');
@@ -1868,9 +1923,9 @@
     a.click();
   }
 
-  const now = new Date();
-  document.getElementById('dateInput').value = now.toISOString().split('T')[0];
-  document.getElementById('timeInput').value = now.toTimeString().slice(0, 5);
+  const now = nowInAppTz();
+  document.getElementById('dateInput').value = now.date;
+  document.getElementById('timeInput').value = now.time;
   initFoodBuilder();
   updateZoneUI();
   renderAll();
