@@ -301,3 +301,109 @@ export function playSort({ cards, hero, draft, onSave, onFinish }) {
   document.addEventListener('keydown', onKey);
   showCard();
 }
+
+// ---------------------------------------------------------------- «Лавка и кухня»
+
+// done: id уже приготовленных рецептов, чтобы сначала предлагать новые
+export function playKitchen({ recipes, products, stalls, plate, hero, done = [], onFinish }) {
+  const el = layer('kitchen');
+  let r = null;
+  let basket = new Set();
+  let stall = stalls[0].id;
+  let mistakes = 0;
+  let stepIdx = 0;
+  let stepOrder = [];
+  const stop = () => { document.removeEventListener('keydown', onKey); closeLayer(el); };
+  const head = (sub) => `<div class="g-head"><button type="button" class="g-close" data-exit aria-label="Выйти">✕</button>
+    <div class="g-title">Лавка и кухня</div><div class="g-hint">${sub}</div></div>`;
+  const prod = (id) => products[id];
+
+  const orders = () => {
+    const fresh = shuffle(recipes.filter((x) => !done.includes(x.id)));
+    const list = [...fresh, ...shuffle(recipes.filter((x) => done.includes(x.id)))].slice(0, 3);
+    el.innerHTML = `${head('Выбери, кому сегодня готовим')}
+      <div class="k-wrap"><div class="k-orders">${list.map((x) => `<button type="button" class="k-order" data-recipe="${x.id}">
+        <span class="k-oe">${x.emoji}</span><span class="k-ot"><b>${esc(x.who)}</b><span>${esc(x.ask)}</span><span class="k-on">${esc(x.name)}${done.includes(x.id) ? ' · уже готовили' : ''}</span></span></button>`).join('')}</div>
+      <p class="small muted" style="text-align:center">Всего рецептов ${recipes.length}, приготовлено ${new Set(done).size}</p></div>`;
+  };
+
+  const shop = (msg = '') => {
+    const have = r.need.filter((id) => basket.has(id)).length;
+    const ready = have === r.need.length;
+    el.innerHTML = `${head(`${esc(r.who)}: ${esc(r.name)}`)}
+      <div class="k-wrap">
+        <div class="k-list"><div class="k-cap">🧺 Список покупок · ${have} из ${r.need.length}</div>
+          <div class="k-need">${r.need.map((id) => `<span class="k-ni ${basket.has(id) ? 'got' : ''}">${prod(id)[0]} ${esc(prod(id)[1])}</span>`).join('')}</div></div>
+        <div class="k-say ${msg ? 'show' : ''}" data-say>${esc(msg)}</div>
+        <div class="k-stalls" role="tablist">${stalls.map((s) => `<button type="button" role="tab" class="k-stall ${s.id === stall ? 'on' : ''}" data-stall="${s.id}" aria-selected="${s.id === stall}">${s.emoji}<span>${s.label}</span></button>`).join('')}</div>
+        <div class="k-shelf">${Object.entries(products).filter(([, p]) => p[2] === stall).map(([id, p]) => `<button type="button" class="k-prod ${basket.has(id) ? 'in' : ''}" data-prod="${id}"><span>${p[0]}</span>${esc(p[1])}</button>`).join('')}</div>
+        <div class="s-foot"><button type="button" class="pill-btn" data-cook ${ready ? '' : 'disabled'}>${ready ? '👩‍🍳 На кухню!' : 'Собери всё по списку'}</button></div>
+      </div>`;
+  };
+
+  const cook = (msg = '') => {
+    el.innerHTML = `${head(`Готовим: ${esc(r.name)}`)}
+      <div class="k-wrap">
+        <div class="k-pot"><div class="k-in">${r.need.map((id) => prod(id)[0]).join(' ')}</div><div class="k-pe ${stepIdx ? 'bub' : ''}">${stepIdx >= r.steps.length ? r.emoji : '🍳'}</div></div>
+        <div class="k-say ${msg ? 'show' : ''}" data-say>${esc(msg || 'Нажимай шаги по порядку: что сначала, что потом?')}</div>
+        <ol class="k-done">${r.steps.slice(0, stepIdx).map((t) => `<li>✅ ${esc(t)}</li>`).join('')}</ol>
+        <div class="k-steps">${stepOrder.filter((i) => i >= stepIdx).map((i) => `<button type="button" class="k-step" data-step="${i}">${esc(r.steps[i])}</button>`).join('')}</div>
+      </div>`;
+  };
+
+  const result = () => {
+    el.innerHTML = `<div class="g-end">
+      <div class="k-dish">${r.emoji}</div>
+      <h2>Готово: ${esc(r.name)}!</h2>
+      <p class="g-end-note"><b>${esc(r.who)}</b> говорит спасибо.</p>
+      <div class="k-meaning">${hero('medok', 'cheer', 70)}<p>${esc(r.meaning)}</p></div>
+      <div class="g-end-learn"><div class="g-end-cap">Что даёт это блюдо</div>${r.plate.map((k) => `<span class="chip small">${esc(plate[k])}</span>`).join('')}</div>
+      <p class="small muted">${mistakes ? `Подсказок понадобилось: ${mistakes}. С каждым разом получается увереннее.` : 'Ни одной подсказки, настоящий шеф!'}</p>
+      <div class="g-end-btns"><button type="button" class="pill-btn" data-again>Ещё заказ</button><button type="button" class="pill-btn ghost" data-exit>Выйти</button></div></div>`;
+    done = [...done, r.id];
+    onFinish?.({ g: 'kitchen', mode: 'solo', recipe: r.id, scores: [mistakes], of: r.need.length + r.steps.length });
+  };
+
+  const nudge = (sel, text, again) => {
+    mistakes++;
+    const b = el.querySelector(sel);
+    b?.classList.remove('shake'); void b?.offsetWidth; b?.classList.add('shake');
+    setTimeout(() => again(text), reduced() ? 0 : 280);
+  };
+
+  el.addEventListener('click', (ev) => {
+    const t = ev.target;
+    if (t.closest('[data-exit]')) return stop();
+    if (t.closest('[data-again]')) { r = null; return orders(); }
+    const o = t.closest('[data-recipe]');
+    if (o) {
+      r = recipes.find((x) => x.id === o.dataset.recipe);
+      basket = new Set(); mistakes = 0; stepIdx = 0; stall = stalls[0].id;
+      stepOrder = shuffle(r.steps.map((_, i) => i));
+      return shop(`${r.ask} Найди на прилавках всё по списку.`);
+    }
+    const s = t.closest('[data-stall]');
+    if (s) { stall = s.dataset.stall; return shop(); }
+    const p = t.closest('[data-prod]');
+    if (p) {
+      const id = p.dataset.prod;
+      if (basket.has(id)) return shop(`${prod(id)[1]} уже в корзине.`);
+      if (!r.need.includes(id)) return nudge(`[data-prod="${id}"]`, `${prod(id)[0]} ${prod(id)[1]}: этого нет в рецепте. Посмотри в список.`, shop);
+      basket.add(id);
+      const left = r.need.length - basket.size;
+      return shop(left ? `Есть! Осталось ${left}.` : 'Всё собрано, можно на кухню!');
+    }
+    if (t.closest('[data-cook]')) return cook();
+    const st = t.closest('[data-step]');
+    if (st) {
+      const i = +st.dataset.step;
+      if (i !== stepIdx) return nudge(`[data-step="${i}"]`, 'Хм, кажется, сначала нужно другое.', cook);
+      stepIdx++;
+      if (stepIdx >= r.steps.length) { cook('Готово! Пахнет очень вкусно.'); return setTimeout(result, reduced() ? 0 : 900); }
+      return cook(pickOne(['Отлично!', 'Верно!', 'Так держать!', 'Дальше!']));
+    }
+  });
+  const onKey = (ev) => { if (ev.key === 'Escape') stop(); };
+  document.addEventListener('keydown', onKey);
+  orders();
+}

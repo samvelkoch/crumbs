@@ -180,3 +180,13 @@ test('value cards and pole indices', async () => {
   assert.match(text, /Никаких диагнозов/);
   assert.match(text, /Изменения с прошлого/);
 });
+
+test('kitchen recipes use known products', async () => {
+  const { RECIPES, PRODUCTS, STALLS, PLATE } = await import('../js/kitchen.js');
+  const stalls = new Set(STALLS.map((s) => s.id));
+  for (const p of Object.values(PRODUCTS)) assert.ok(stalls.has(p[2]));
+  for (const r of RECIPES) {
+    for (const id of r.need) assert.ok(PRODUCTS[id], `${r.id}: ${id}`);
+    assert.ok(r.steps.length >= 3 && r.plate.every((k) => PLATE[k]), r.id);
+  }
+});
