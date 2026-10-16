@@ -98,7 +98,23 @@ function curls(cx, cy, rx, ry, n, seed) {
   return `<path d="${d}" fill="none" stroke="#b39c7c" stroke-width=".9" opacity=".8"/>`;
 }
 
-export function medokSVG(mood = 'happy', size = 120) {
+// style: 'plush' (как игрушки) | 'toon' (мультик) | 'detective' (игрушки в костюмах сыщиков)
+export const STYLES = [
+  { id: 'plush', label: 'Как игрушки' },
+  { id: 'toon', label: 'Мультик' },
+  { id: 'detective', label: 'Сыщики' },
+];
+
+const MAGNIFIER = (x, y, s = 1) => `<g class="m-prop" transform="translate(${x} ${y}) scale(${s})"><circle cx="0" cy="0" r="11" fill="rgba(186,230,253,.55)" stroke="#78350f" stroke-width="4"/><path d="M-8,9 L-17,19" stroke="#78350f" stroke-width="6" stroke-linecap="round"/><path d="M-5,-5 q4,-3 8,0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></g>`;
+
+// Шляпа сыщика (охотничья, в клетку) для Медка
+const DEERSTALKER = `<g class="m-hat"><path d="M40,30 Q42,4 70,2 Q98,4 100,30 Z" fill="#b45309" stroke="#78350f" stroke-width="2"/>
+  <path d="M50,28 Q52,8 70,6 M90,28 Q88,8 70,6 M44,18 H96 M42,25 H98" stroke="#92400e" stroke-width="1.6" fill="none" opacity=".7"/>
+  <ellipse cx="70" cy="30" rx="36" ry="6" fill="#92400e"/><circle cx="70" cy="3" r="3.5" fill="#78350f"/></g>`;
+
+export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
+  if (style === 'toon') return medokToon(mood, size);
+  const det = style === 'detective';
   const id = 'mk' + ++seq;
   const blush = mood === 'happy' || mood === 'cheer';
   return `<svg class="mascot medok mood-${mood}" width="${size}" height="${size * 120 / 140}" viewBox="0 0 140 120" role="img" aria-label="Ёж Медок">
@@ -121,11 +137,54 @@ export function medokSVG(mood = 'happy', size = 120) {
     <ellipse cx="66.7" cy="82.8" rx="3" ry="2" fill="#fff" opacity=".85"/>
     ${mouth(mood, 70, 99, 5, '#7a6248', 1.8)}
   </g>
-  ${mood === 'think' ? `<g class="m-prop"><circle cx="118" cy="40" r="11" fill="rgba(186,230,253,.55)" stroke="#78350f" stroke-width="4"/><path d="M110,49 L101,59" stroke="#78350f" stroke-width="6" stroke-linecap="round"/><path d="M113,35 q4,-3 8,0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></g>` : ''}
+  ${det ? DEERSTALKER : ''}
+  ${mood === 'think' ? MAGNIFIER(118, 40) : det ? MAGNIFIER(122, 80, 0.85) : ''}
 </svg>`;
 }
 
-export function pusyaSVG(mood = 'happy', size = 120) {
+function medokToon(mood, size) {
+  const ink = '#3b3127';
+  return `<svg class="mascot medok mood-${mood}" width="${size}" height="${size * 120 / 140}" viewBox="0 0 140 120" role="img" aria-label="Ёж Медок">
+  <ellipse cx="70" cy="112" rx="48" ry="6" fill="rgba(0,0,0,.13)"/>
+  ${sparkles(mood === 'cheer')}
+  <g class="m-body" stroke-linejoin="round">
+    <polygon points="${toonSpikes(70, 64, 50, 46, 13, 0.2)}" fill="#6f6250" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="70" cy="62" rx="40" ry="34" fill="#8a7b63"/>
+    <path d="M44,52 q6,-8 12,0 M62,42 q6,-8 12,0 M80,46 q6,-8 12,0" stroke="#a89878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="52" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
+    <ellipse cx="88" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
+    <ellipse cx="70" cy="82" rx="31" ry="25" fill="#f0dcbf" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="51" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/><ellipse cx="89" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/>
+    ${eyes(mood, 56, 84, 77, 5.2, '#1c1410')}
+    <ellipse cx="70" cy="87" rx="8.5" ry="6.5" fill="#111" stroke="${ink}" stroke-width="1"/>
+    <ellipse cx="67" cy="85" rx="3" ry="1.8" fill="#fff"/>
+    ${mouth(mood, 70, 97, 6, ink, 2.4)}
+  </g>
+  ${mood === 'think' ? MAGNIFIER(118, 40) : ''}
+</svg>`;
+}
+
+function toonSpikes(cx, cy, rx, ry, n, depth) {
+  const pts = [];
+  for (let i = 0; i <= n * 2; i++) {
+    const a = Math.PI + (Math.PI * 1.15 * i) / (n * 2) - 0.08 * Math.PI;
+    const k = i % 2 ? 1 + depth : 1;
+    pts.push(`${(cx + Math.cos(a) * rx * k).toFixed(1)},${(cy + Math.sin(a) * ry * k).toFixed(1)}`);
+  }
+  pts.push(`${cx + rx * 0.95},${cy + ry * 0.7}`, `${cx - rx * 0.95},${cy + ry * 0.7}`);
+  return pts.join(' ');
+}
+
+// Кепка и бабочка сыщика для Пуси
+const NEWSBOY = `<g class="m-hat"><path d="M38,30 Q40,6 70,6 Q100,6 102,30 Q70,22 38,30Z" fill="#475569" stroke="#1e293b" stroke-width="2"/>
+  <path d="M48,26 Q50,10 70,9 M92,26 Q90,10 70,9 M42,20 Q70,14 98,20" stroke="#94a3b8" stroke-width="1.4" fill="none" opacity=".8"/>
+  <path d="M60,28 Q74,24 96,30 Q86,36 62,32Z" fill="#334155"/><circle cx="70" cy="8" r="3" fill="#1e293b"/></g>`;
+const BOWTIE = '<g><path d="M70,84 L58,78 L58,90Z M70,84 L82,78 L82,90Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.2"/><circle cx="70" cy="84" r="3" fill="#b91c1c"/></g>';
+const NOTEBOOK = (x, y) => `<g transform="translate(${x} ${y}) rotate(-12)"><rect x="-9" y="-12" width="18" height="24" rx="2" fill="#fde68a" stroke="#92400e" stroke-width="1.5"/><path d="M-5,-6 H5 M-5,-1 H5 M-5,4 H3" stroke="#92400e" stroke-width="1.2"/></g>`;
+
+export function pusyaSVG(mood = 'happy', size = 120, style = 'plush') {
+  if (style === 'toon') return pusyaToon(mood, size);
+  const det = style === 'detective';
   const blush = mood === 'happy' || mood === 'cheer';
   const up = mood === 'cheer';
   const think = mood === 'think';
@@ -163,8 +222,49 @@ export function pusyaSVG(mood = 'happy', size = 120) {
     ${blush ? '<ellipse cx="49" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/><ellipse cx="91" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/>' : ''}
     <path d="M66,56 l-1.5,4 M74,56 l1.5,4" stroke="#2b2b2b" stroke-width="1.8" stroke-linecap="round"/>
     ${mouth(mood, 70, 67, 16, '#4a4a4a', 1.8)}
+    ${det ? BOWTIE + NEWSBOY : ''}
+    ${det && !up ? NOTEBOOK(pawR[0] + 4, pawR[1] - 10) : ''}
   </g>
   ${think ? '<g class="m-prop" fill="#7c3aed" font-family="system-ui,sans-serif" font-weight="800"><text x="106" y="22" font-size="20">?</text></g>' : ''}
+</svg>`;
+}
+
+function pusyaToon(mood, size) {
+  const ink = '#4a2a14';
+  const brown = '#a8622f';
+  const mask = '#efe2cc';
+  const up = mood === 'cheer';
+  const think = mood === 'think';
+  const armL = up ? 'M54,112 Q40,96 36,80' : think ? 'M54,112 Q44,110 56,96' : 'M54,112 Q42,120 40,134';
+  const armR = up ? 'M86,112 Q100,96 104,80' : 'M86,112 Q98,120 100,134';
+  const pL = up ? [36, 78] : think ? [58, 94] : [40, 136];
+  const pR = up ? [104, 78] : [100, 136];
+  return `<svg class="mascot pusya mood-${mood}" width="${size}" height="${size * 160 / 140}" viewBox="0 0 140 160" role="img" aria-label="Обезьянка Пуся">
+  <ellipse cx="70" cy="154" rx="40" ry="5.5" fill="rgba(0,0,0,.12)"/>
+  ${sparkles(up)}
+  <g class="m-body" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M90,136 Q118,140 118,118 Q118,106 108,108" fill="none" stroke="${ink}" stroke-width="9"/>
+    <path d="M90,136 Q118,140 118,118 Q118,106 108,108" fill="none" stroke="${brown}" stroke-width="5"/>
+    <ellipse cx="56" cy="146" rx="12" ry="7" fill="${mask}" stroke="${ink}" stroke-width="2.4"/>
+    <ellipse cx="84" cy="146" rx="12" ry="7" fill="${mask}" stroke="${ink}" stroke-width="2.4"/>
+    <ellipse cx="70" cy="124" rx="24" ry="22" fill="${brown}" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="70" cy="128" rx="13" ry="12" fill="${mask}"/>
+    <path d="${armL}" fill="none" stroke="${ink}" stroke-width="11"/><path d="${armL}" fill="none" stroke="${brown}" stroke-width="6.5"/>
+    <path d="${armR}" fill="none" stroke="${ink}" stroke-width="11"/><path d="${armR}" fill="none" stroke="${brown}" stroke-width="6.5"/>
+    <circle cx="${pL[0]}" cy="${pL[1]}" r="7" fill="${mask}" stroke="${ink}" stroke-width="2.2"/>
+    <circle cx="${pR[0]}" cy="${pR[1]}" r="7" fill="${mask}" stroke="${ink}" stroke-width="2.2"/>
+    <circle cx="25" cy="58" r="13" fill="${mask}" stroke="${ink}" stroke-width="2.5"/><circle cx="26" cy="58" r="6.5" fill="#e6c9a8"/>
+    <circle cx="115" cy="58" r="13" fill="${mask}" stroke="${ink}" stroke-width="2.5"/><circle cx="114" cy="58" r="6.5" fill="#e6c9a8"/>
+    <ellipse cx="70" cy="54" rx="44" ry="42" fill="${brown}" stroke="${ink}" stroke-width="2.5"/>
+    <path d="M70,40 C64,24 38,24 37,44 C36,58 46,64 58,64 L82,64 C94,64 104,58 103,44 C102,24 76,24 70,40Z" fill="${mask}"/>
+    <ellipse cx="70" cy="76" rx="29" ry="18" fill="${mask}"/>
+    ${think ? `<path d="M78,34 Q86,29 94,34" fill="none" stroke="${ink}" stroke-width="2.6"/>` : ''}
+    ${eyes(mood, 55, 85, 48, 5.6, '#1a1008')}
+    <ellipse cx="45" cy="72" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/><ellipse cx="95" cy="72" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/>
+    <path d="M65,68 l-1.5,4 M75,68 l1.5,4" stroke="${ink}" stroke-width="2.4"/>
+    ${mouth(mood, 70, 79, 15, ink, 2.4)}
+  </g>
+  ${think ? '<g class="m-prop" fill="#7c3aed" font-family="system-ui,sans-serif" font-weight="800"><text x="108" y="20" font-size="20">?</text></g>' : ''}
 </svg>`;
 }
 

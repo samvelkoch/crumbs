@@ -351,6 +351,7 @@ textarea.input { min-height: 72px; resize: vertical; }
 .row:last-child { border-bottom: 0; }
 .row .ico { font-size: 1.4rem; width: 32px; text-align: center; flex: none; }
 .row .txt { flex: 1; min-width: 0; }
+.row .t, .row .d { display: block; }
 .row .t { font-weight: 800; }
 .row .d { font-size: .82rem; color: var(--muted); }
 .row .chev { color: var(--muted); font-weight: 900; }

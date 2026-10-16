@@ -10,11 +10,11 @@ import { analyze, evaluateCase, skinScore, ZONES, LEVELS, MAX_LEVEL, FLARE } fro
 import { PLATE, WATER_GOAL, byDay, plateOf, waterOf, stars, rankOf, BADGES, earnedBadges, streak } from './game.js';
 import { load, save, flush, requestPersistence, uid, merge, emptyState } from './store.js';
 import { encryptState, decryptBackup, BackupError } from './backup.js';
-import { medokSVG, pusyaSVG } from './mascots.js';
+import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.js';
 import { contextTip, CHEERS, pick } from './tips.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -40,6 +40,11 @@ const LEVEL_FACES = ['😊', '🙂', '😐', '😣', '😫'];
 let state = emptyState();
 const ui = { tab: 'today', month: null, day: null, zone: 'max', speech: null, seed: Math.floor(Math.random() * 1e6) };
 let deferredInstall = null;
+
+// Герои рисуются в стиле, который выбрали в «Агентстве»
+const heroStyle = (who) => state.profile.heroes?.[who] || 'plush';
+const medokSVG = (mood, size) => medokBase(mood, size, heroStyle('medok'));
+const pusyaSVG = (mood, size) => pusyaBase(mood, size, heroStyle('pusya'));
 
 // ---------------------------------------------------------------- данные
 
@@ -266,7 +271,7 @@ function renderToday() {
 
   <section class="card">
     <div class="card-head"><h2>Сегодня</h2><span class="hint">${st > 1 ? `🔥 ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : ''}</span></div>
-    <div class="timeline">${timeline.length ? timeline.map(entryRow).join('') : '<div class="empty">Пока пусто. Начнём с кнопки «Еда» или «Кожа».</div>'}</div>
+    <div class="timeline">${timeline.length ? timeline.map(entryRow).join('') : `<div class="empty">Пока пусто. Начнём с кнопки «Еда» или «Кожа».${state.entries.length ? '' : '<br><button type="button" class="link-btn" data-action="demo-load" style="margin-top:8px">🧪 Или посмотреть на примере</button>'}</div>`}</div>
   </section>`;
 }
 
@@ -457,6 +462,7 @@ function renderMore() {
   </section>
 
   <section class="card list">
+    <button type="button" class="row" data-action="heroes"><span class="ico">🦔</span><span class="txt"><span class="t">Внешний вид героев</span><span class="d">Медок: ${esc(STYLES.find((x) => x.id === heroStyle('medok')).label)}, Пуся: ${esc(STYLES.find((x) => x.id === heroStyle('pusya')).label)}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="rename"><span class="ico">🪪</span><span class="txt"><span class="t">Имя сыщика</span><span class="d">${esc(state.profile.name || 'не указано')}</span></span><span class="chev">›</span></button>
     ${state.profile.demo
       ? '<button type="button" class="row" data-action="demo-clear"><span class="ico">🧹</span><span class="txt"><span class="t">Убрать пример</span><span class="d">Останутся только настоящие записи</span></span><span class="chev">›</span></button>'
@@ -689,6 +695,25 @@ function caseSheet(key) {
         say('medok', `Дело открыто: ${itemLabel(key)}. Отмечаем кожу каждый день, а я веду протокол.`, 'think');
         commit();
       },
+    },
+  });
+}
+
+// --- внешний вид героев
+function heroesSheet() {
+  const pick = { medok: heroStyle('medok'), pusya: heroStyle('pusya') };
+  const row = (who, fn) => `<div class="field"><span class="label">${who === 'medok' ? 'Медок' : 'Пуся'}</span>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${STYLES.map((st) => `<button type="button" class="chip" style="display:grid;justify-items:center;border-radius:18px;padding:8px 4px" data-sa="hero" data-who="${who}" data-style="${st.id}" aria-pressed="${pick[who] === st.id}">${fn('happy', 72, st.id)}<span class="small">${st.label}</span></button>`).join('')}</div></div>`;
+  openSheet({
+    title: 'Внешний вид героев',
+    body: row('medok', medokBase) + row('pusya', pusyaBase),
+    foot: '<button type="button" class="pill-btn" data-sa="save">Сохранить</button>',
+    actions: {
+      hero: (b) => {
+        pick[b.dataset.who] = b.dataset.style;
+        for (const x of sheet().querySelectorAll(`[data-sa="hero"][data-who="${b.dataset.who}"]`)) x.setAttribute('aria-pressed', x === b);
+      },
+      save: () => { state.profile.heroes = { ...pick }; closeSheet(); say('pusya', 'Новый образ! Нравится?', 'cheer'); commit(); },
     },
   });
 }
@@ -956,6 +981,7 @@ const ACTIONS = {
   install: installSheet,
   privacy: privacySheet,
   rename: renameSheet,
+  heroes: heroesSheet,
   'demo-load': () => {
     state.entries = [...state.entries.filter((e) => !e.demo), ...demoEntries(today())].sort((a, b) => a.ts - b.ts);
     state.profile.demo = true;
