@@ -560,7 +560,7 @@ body.game-open { overflow: hidden; }
 .k-ni.got::before { content: '✓ '; color: var(--green); }
 .k-say { min-height: 1.4em; text-align: center; font-weight: 800; color: var(--brand); opacity: .4; }
 .k-say.show { opacity: 1; }
-.k-stalls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.k-stalls { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .k-stall { display: grid; place-items: center; gap: 2px; font-size: 1.5rem; padding: 8px 2px; border-radius: 14px; background: var(--card); border: 2px solid var(--line); }
 .k-stall span { font-size: .7rem; font-weight: 800; line-height: 1.1; text-align: center; }
 .k-stall.on { border-color: var(--brand); background: var(--brand-soft); }
@@ -581,3 +581,12 @@ body.game-open { overflow: hidden; }
 .k-dish { font-size: 5rem; line-height: 1; }
 .k-meaning { display: flex; gap: 10px; align-items: center; text-align: left; background: var(--card); border-radius: var(--radius); padding: 12px; box-shadow: var(--shadow); }
 .k-meaning p { margin: 0; }
+.k-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.k-level { display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); text-align: center; }
+.k-level span { font-size: 1.6rem; }
+.k-level small { font-size: .72rem; color: var(--muted); line-height: 1.2; }
+.k-level.on { border-color: var(--brand); background: var(--brand-soft); }
+.k-prod { position: relative; }
+.k-cnt { position: absolute; top: 4px; right: 6px; min-width: 22px; height: 22px; border-radius: 11px; background: var(--brand); color: #fff; font-style: normal; font-weight: 900; font-size: .8rem; display: grid; place-items: center; }
+.k-ni b { color: var(--brand); }
+.k-list .pill-btn { margin-top: 4px; }

@@ -14,13 +14,13 @@ import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.
 import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { playCatch, playSort, playKitchen } from './games.js';
-import { RECIPES, PRODUCTS, STALLS, PLATE as DISH_PLATE } from './kitchen.js';
+import { RECIPES, PRODUCTS, STALLS, LEVELS as KITCHEN_LEVELS, PLATE as DISH_PLATE } from './kitchen.js';
 import { VALUE_CARDS } from './values.js';
 import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.js';
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.7.1';
+const VERSION = '2.8.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -540,7 +540,7 @@ function renderGames() {
   </section>
   <section class="card game-card">
     <div class="gc-top"><span class="gc-ico">🧺</span><div><h2>Лавка и кухня</h2>
-      <p class="small muted">Кто-то из близких просит приготовить блюдо. Собираешь продукты на прилавках по списку, готовишь по шагам и узнаёшь, чем это блюдо помогает.</p></div></div>
+      <p class="small muted">Кто-то из близких просит приготовить блюдо. Собираешь продукты на прилавках по списку, готовишь по шагам и узнаёшь, чем это блюдо помогает. Три уровня: Помощник, Повар и Шеф.</p></div></div>
     ${(() => { const k = new Set(state.games.filter((x) => x.g === 'kitchen').map((x) => x.recipe)); return k.size ? `<p class="small muted">Приготовлено ${k.size} из ${RECIPES.length} рецептов</p>` : ''; })()}
     <div class="gc-btns"><button type="button" class="pill-btn" data-action="game-kitchen">🧺 Открыть лавку</button></div>
   </section>`;
@@ -561,7 +561,9 @@ function startCatch(mode) {
 
 function startKitchen() {
   playKitchen({
-    recipes: RECIPES, products: PRODUCTS, stalls: STALLS, plate: DISH_PLATE, hero: heroFor,
+    recipes: RECIPES, products: PRODUCTS, stalls: STALLS, plate: DISH_PLATE, levels: KITCHEN_LEVELS, hero: heroFor,
+    level: state.profile.kitchenLevel || 1,
+    onLevel: (l) => { state.profile.kitchenLevel = l; save(state); },
     done: state.games.filter((x) => x.g === 'kitchen').map((x) => x.recipe),
     onFinish: (r) => { state.games.push({ id: uid(), ts: Date.now(), ...r }); commit(); },
   });
