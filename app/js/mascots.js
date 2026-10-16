@@ -10,22 +10,30 @@ function rng(seed) {
 }
 
 // Пушистый контур: эллипс из мелких бугорков
-function fuzz(cx, cy, rx, ry, n, amp, seed) {
+// taper > 0 сужает верх: получается яйцо, как у настоящего Медка
+function fuzz(cx, cy, rx, ry, n, amp, seed, taper = 0) {
   const r = rng(seed);
   let d = '';
   for (let i = 0; i <= n; i++) {
     const a = (i / n) * Math.PI * 2;
-    const x = cx + Math.cos(a) * rx;
+    const tx = (b) => 1 - taper * Math.max(0, -Math.sin(b));
+    const x = cx + Math.cos(a) * rx * tx(a);
     const y = cy + Math.sin(a) * ry;
     if (i === 0) { d += `M${x.toFixed(1)},${y.toFixed(1)}`; continue; }
     const am = a - Math.PI / n;
     const k = 1 + amp * (0.6 + r() * 0.8);
-    d += ` Q${(cx + Math.cos(am) * rx * k).toFixed(1)},${(cy + Math.sin(am) * ry * k).toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
+    d += ` Q${(cx + Math.cos(am) * rx * k * tx(am)).toFixed(1)},${(cy + Math.sin(am) * ry * k).toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`;
   }
   return d + 'Z';
 }
 
-function eyes(mood, lx, rx, y, r, color = '#111') {
+// open: глаза всегда открыты (у Пуси вышитые глаза не закрываются), радость видна по «улыбке» под глазом
+function eyes(mood, lx, rx, y, r, color = '#111', open = false) {
+  if (open && (mood === 'happy' || mood === 'cheer')) {
+    return eyes('calm', lx, rx, y, r, color) + `<g fill="none" stroke="${color}" stroke-width="1.4" stroke-linecap="round" opacity=".55">
+      <path d="M${lx - r * 1.1},${y + r * 1.5} Q${lx},${y + r * 2.2} ${lx + r * 1.1},${y + r * 1.5}"/>
+      <path d="M${rx - r * 1.1},${y + r * 1.5} Q${rx},${y + r * 2.2} ${rx + r * 1.1},${y + r * 1.5}"/></g>`;
+  }
   if (mood === 'happy' || mood === 'cheer') {
     return `<g fill="none" stroke="${color}" stroke-width="${Math.max(2.2, r * 0.7)}" stroke-linecap="round">
       <path d="M${lx - r},${y + 1} Q${lx},${y - r - 1.5} ${lx + r},${y + 1}"/>
@@ -123,12 +131,12 @@ export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
     <radialGradient id="${id}n" cx="35%" cy="30%" r="65%"><stop offset="0" stop-color="#4b4b4b"/><stop offset=".5" stop-color="#111"/><stop offset="1" stop-color="#000"/></radialGradient>
     <radialGradient id="${id}f" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#dcc6a6"/><stop offset="1" stop-color="#c4ab88"/></radialGradient>
   </defs>
-  <ellipse cx="70" cy="112" rx="50" ry="6" fill="rgba(0,0,0,.13)"/>
+  <ellipse cx="70" cy="113" rx="42" ry="5.5" fill="rgba(0,0,0,.13)"/>
   ${sparkles(mood === 'cheer')}
   <g class="m-body">
-    <path d="${fuzz(70, 60, 54, 48, 34, 0.07, 3)}" fill="url(#${id}b)"/>
-    ${medokFur(70, 56, 50, 44)}
-    <path d="M118,86 l7,4 l-3,6 l-6,-3z" fill="#1c1917"/>
+    <path d="${fuzz(70, 60, 45, 52, 34, 0.07, 3, 0.2)}" fill="url(#${id}b)"/>
+    ${medokFur(70, 58, 38, 46)}
+    <path d="M110,90 l7,4 l-3,6 l-6,-3z" fill="#1c1917"/>
     <path d="${fuzz(70, 84, 26, 22, 22, 0.06, 11)}" fill="url(#${id}f)"/>
     ${curls(70, 84, 24, 20, 30, 5)}
     ${blush ? '<ellipse cx="54" cy="93" rx="4.5" ry="2.6" fill="#f4a3a3" opacity=".7"/><ellipse cx="86" cy="93" rx="4.5" ry="2.6" fill="#f4a3a3" opacity=".7"/>' : ''}
@@ -145,15 +153,15 @@ export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
 function medokToon(mood, size) {
   const ink = '#3b3127';
   return `<svg class="mascot medok mood-${mood}" width="${size}" height="${size * 120 / 140}" viewBox="0 0 140 120" role="img" aria-label="Ёж Медок">
-  <ellipse cx="70" cy="112" rx="48" ry="6" fill="rgba(0,0,0,.13)"/>
+  <ellipse cx="70" cy="113" rx="42" ry="5.5" fill="rgba(0,0,0,.13)"/>
   ${sparkles(mood === 'cheer')}
   <g class="m-body" stroke-linejoin="round">
-    <polygon points="${toonSpikes(70, 64, 50, 46, 13, 0.2)}" fill="#6f6250" stroke="${ink}" stroke-width="2.5"/>
-    <ellipse cx="70" cy="62" rx="40" ry="34" fill="#8a7b63"/>
-    <path d="M44,52 q6,-8 12,0 M62,42 q6,-8 12,0 M80,46 q6,-8 12,0" stroke="#a89878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <polygon points="${toonSpikes(70, 62, 41, 50, 12, 0.17)}" fill="#6f6250" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="70" cy="60" rx="32" ry="40" fill="#8a7b63"/>
+    <path d="M48,46 q6,-8 12,0 M64,34 q6,-8 12,0 M80,44 q6,-8 12,0" stroke="#a89878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
     <ellipse cx="52" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
     <ellipse cx="88" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
-    <ellipse cx="70" cy="82" rx="31" ry="25" fill="#f0dcbf" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="70" cy="84" rx="28" ry="24" fill="#f0dcbf" stroke="${ink}" stroke-width="2.5"/>
     <ellipse cx="51" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/><ellipse cx="89" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/>
     ${eyes(mood, 56, 84, 77, 5.2, '#1c1410')}
     <ellipse cx="70" cy="87" rx="8.5" ry="6.5" fill="#111" stroke="${ink}" stroke-width="1"/>
@@ -218,7 +226,7 @@ export function pusyaSVG(mood = 'happy', size = 120, style = 'plush') {
     <path d="M70,34 C65,23 47,22 45,37 C44,47 51,53 60,53 L80,53 C89,53 96,47 95,37 C93,22 75,23 70,34Z" fill="${mask}"/>
     <ellipse cx="70" cy="65" rx="25" ry="17" fill="${mask}"/>
     ${think ? `<path d="M77,29 Q84,25 91,29" fill="none" stroke="${brownD}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-    ${eyes(mood, 58, 82, 40, 3.6, '#1a1410')}
+    ${eyes(mood, 58, 82, 40, 3.6, '#1a1410', true)}
     ${blush ? '<ellipse cx="49" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/><ellipse cx="91" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/>' : ''}
     <path d="M66,56 l-1.5,4 M74,56 l1.5,4" stroke="#2b2b2b" stroke-width="1.8" stroke-linecap="round"/>
     ${mouth(mood, 70, 67, 16, '#4a4a4a', 1.8)}
@@ -259,7 +267,7 @@ function pusyaToon(mood, size) {
     <path d="M70,40 C64,24 38,24 37,44 C36,58 46,64 58,64 L82,64 C94,64 104,58 103,44 C102,24 76,24 70,40Z" fill="${mask}"/>
     <ellipse cx="70" cy="76" rx="29" ry="18" fill="${mask}"/>
     ${think ? `<path d="M78,34 Q86,29 94,34" fill="none" stroke="${ink}" stroke-width="2.6"/>` : ''}
-    ${eyes(mood, 55, 85, 48, 5.6, '#1a1008')}
+    ${eyes(mood, 55, 85, 48, 5.6, '#1a1008', true)}
     <ellipse cx="45" cy="72" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/><ellipse cx="95" cy="72" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/>
     <path d="M65,68 l-1.5,4 M75,68 l1.5,4" stroke="${ink}" stroke-width="2.4"/>
     ${mouth(mood, 70, 79, 15, ink, 2.4)}
