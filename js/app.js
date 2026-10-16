@@ -15,7 +15,7 @@ import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.4.0';
+const VERSION = '2.4.1';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -129,7 +129,14 @@ const RATES = [
 ];
 function rateHTML(id) {
   const cur = state.reactions[id]?.r;
-  return `<div class="rate" role="group" aria-label="Как тебе совет?">${RATES.map((x) => `<button type="button" class="rate-btn" data-action="rate" data-id="${esc(id)}" data-r="${x.r}" aria-pressed="${cur === x.r}" aria-label="${x.label}">${x.emoji}</button>`).join('')}</div>`;
+  return `<div class="rate" role="group" aria-label="Как тебе?">${RATES.map((x) => `<button type="button" class="rate-btn" data-action="rate" data-id="${esc(id)}" data-r="${x.r}" aria-pressed="${cur === x.r}" aria-label="${x.label}">${x.emoji}</button>`).join('')}</div>`;
+}
+
+// Фразы героев вне копилки (подсказки, похвала) получают id по тексту
+function phraseId(text) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+  return 'p:' + h.toString(36);
 }
 
 // Копилка мудрости: нажатие на героя достаёт новый совет или факт, сначала ещё не виденные
@@ -283,7 +290,7 @@ function renderToday() {
   return `
   ${state.profile.demo ? `<div class="banner"><span>👀 Сейчас показан пример. Твои записи появятся после того, как его убрать.</span><button class="pill-btn soft" data-action="demo-clear">Убрать</button></div>` : ''}
   <section class="stage" aria-label="Медок и Пуся">
-    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}${sp.cat ? ` · ${WISDOM_CATS[sp.cat].emoji} ${esc(WISDOM_CATS[sp.cat].label)}` : ''}</span>${sp.cat ? wisdomTextHTML(sp.text) : esc(sp.text)}${sp.wid ? rateHTML(sp.wid) : ''}</div>
+    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}${sp.cat ? ` · ${WISDOM_CATS[sp.cat].emoji} ${esc(WISDOM_CATS[sp.cat].label)}` : ''}</span>${sp.cat ? wisdomTextHTML(sp.text) : esc(sp.text)}${rateHTML(sp.wid || phraseId(sp.text))}</div>
     <div class="tap-hint">Нажми на Медка или Пусю, у них есть что рассказать</div>
     <div class="mascots">
       <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 98)}<span class="name">Медок</span></button>
@@ -750,16 +757,19 @@ function wisdomSheet(cat) {
 // Для взрослых: как ребёнок оценивает советы, по категориям
 function reactionsSheet() {
   const byId = Object.fromEntries(WISDOM.map((w) => [w[0], w]));
+  // фразы вне копилки идут отдельной строкой «Фразы героев»
+  for (const [id, v] of Object.entries(state.reactions)) if (id.startsWith('p:') && v.text) byId[id] = [id, 'phrases', v.who, v.text];
+  const CATS = { ...WISDOM_CATS, phrases: { label: 'Фразы героев', emoji: '💬' } };
   const rated = Object.entries(state.reactions).filter(([id]) => byId[id]).sort((a, b) => b[1].t - a[1].t);
   const count = (list, r) => list.filter(([, v]) => v.r === r).length;
-  const rows = Object.entries(WISDOM_CATS).map(([cat, c]) => {
+  const rows = Object.entries(CATS).map(([cat, c]) => {
     const l = rated.filter(([id]) => byId[id][1] === cat);
     return l.length ? `<tr><td>${c.emoji} ${esc(c.label)}</td><td class="num">${count(l, 1)}</td><td class="num">${count(l, 0)}</td><td class="num">${count(l, -1)}</td></tr>` : '';
   }).join('');
-  const list = (r) => rated.filter(([, v]) => v.r === r).slice(0, 40).map(([id]) => `<div class="wisdom-item"><span class="who">${WISDOM_CATS[byId[id][1]].emoji}</span><span>${esc(byId[id][3])}</span></div>`).join('');
+  const list = (r) => rated.filter(([, v]) => v.r === r).slice(0, 40).map(([id]) => `<div class="wisdom-item"><span class="who">${CATS[byId[id][1]].emoji}</span><span>${esc(byId[id][3])}</span></div>`).join('');
   openSheet({
     title: 'Реакции на советы',
-    body: rated.length ? `<p class="small muted">Оценки ставятся смайликами под советами Медка и Пуси. Хранятся только на этом устройстве и в зашифрованной копии.</p>
+    body: rated.length ? `<p class="small muted">Оценки ставятся смайликами под фразами и советами Медка и Пуси. Хранятся только на этом устройстве и в зашифрованной копии.</p>
       <table class="rtable"><thead><tr><th></th><th>🙂</th><th>😐</th><th>🙁</th></tr></thead><tbody>${rows}</tbody>
       <tfoot><tr><td>Всего</td><td class="num">${count(rated, 1)}</td><td class="num">${count(rated, 0)}</td><td class="num">${count(rated, -1)}</td></tr></tfoot></table>
       ${count(rated, 1) ? `<div class="cat-title">🙂 Понравились</div>${list(1)}` : ''}
@@ -1084,7 +1094,9 @@ const ACTIONS = {
   rate: (b) => {
     const id = b.dataset.id;
     const r = +b.dataset.r;
-    state.reactions[id] = { r, t: Date.now() };
+    // для фраз вне копилки сохраняем сам текст, чтобы взрослым было видно, что оценили
+    const sp = ui.speech;
+    state.reactions[id] = id.startsWith('p:') && sp && phraseId(sp.text) === id ? { r, t: Date.now(), text: sp.text, who: sp.who } : { r, t: Date.now() };
     save(state);
     for (const x of b.parentElement.querySelectorAll('.rate-btn')) x.setAttribute('aria-pressed', x === b);
     b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
