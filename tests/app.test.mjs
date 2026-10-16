@@ -192,3 +192,18 @@ test('kitchen recipes use known products', async () => {
     assert.ok(r.steps.length >= 3 && r.plate.every((k) => PLATE[k]), r.id);
   }
 });
+
+test('robot missions are solvable and simulation matches the solver', async () => {
+  const { MISSIONS, parseMission, solve, simulate } = await import('../js/robot.js');
+  for (const m of MISSIONS) {
+    const g = parseMission(m);
+    const robot = { move: 'legs', tool: (m.tools || ['claw'])[0], head: 'camera' };
+    const p = solve(g, m, robot);
+    assert.ok(p && p.length, m.id);
+    assert.ok(simulate(g, m, robot, p).win, m.id);
+  }
+  // колёса вязнут в грязи, по воде идти нельзя
+  const m7 = MISSIONS.find((m) => m.id === 'r7');
+  const r = simulate(parseMission(m7), m7, { move: 'wheels', tool: 'claw' }, [{ c: 'F', n: 1 }]);
+  assert.equal(r.fail, 'mud');
+});

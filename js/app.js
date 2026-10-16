@@ -14,13 +14,15 @@ import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.
 import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
 import { playCatch, playSort, playKitchen } from './games.js';
+import { playRobot } from './robotgame.js';
+import { DEFAULT_ROBOT, MISSIONS as ROBOT_MISSIONS, robotSVG } from './robot.js';
 import { RECIPES, PRODUCTS, STALLS, LEVELS as KITCHEN_LEVELS, PLATE as DISH_PLATE } from './kitchen.js';
 import { VALUE_CARDS } from './values.js';
 import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.js';
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -528,6 +530,12 @@ function renderGames() {
     <p class="small muted">Вдвоём: экран делится пополам, ${esc(me)} играет за Пусю слева, второй игрок за Медка справа.</p>
   </section>
   <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico gc-robot">${robotSVG({ ...DEFAULT_ROBOT, ...(state.profile.robot || {}) }, 54)}</span><div><h2>Робот</h2>
+      <p class="small muted">Собери своего робота: на колёсах, ногах, гусеницах или с пропеллером. Потом программируй его командами: выбраться из лабиринта, доставить продукты, полить морковь.</p></div></div>
+    ${(() => { const d = new Set(state.games.filter((x) => x.g === 'robot').map((x) => x.mission)); return d.size ? `<p class="small muted">Пройдено миссий: ${d.size} из ${ROBOT_MISSIONS.length}</p>` : ''; })()}
+    <div class="gc-btns"><button type="button" class="pill-btn" data-action="game-robot">🤖 К роботу</button></div>
+  </section>
+  <section class="card game-card">
     <div class="gc-top"><span class="gc-ico">🃏</span><div><h2>Что для меня важно</h2>
       <p class="small muted">Пуся показывает карточки: семья, друзья, приключения, быть лучшей и много другого. Раскладываешь их по колодам, как чувствуешь. Правильных ответов нет.</p></div></div>
     ${state.sorts.length ? `<p class="small muted">Разложено ${state.sorts.length} ${plural(state.sorts.length, 'раз', 'раза', 'раз')}, последний раз ${shortDay(dayKey(state.sorts[state.sorts.length - 1].ts))}</p>` : ''}
@@ -556,6 +564,18 @@ function startCatch(mode) {
       state.games.push({ id: uid(), ts: Date.now(), ...r });
       commit();
     },
+  });
+}
+
+function startRobot() {
+  const best = {};
+  for (const x of state.games) if (x.g === 'robot') best[x.mission] = Math.min(best[x.mission] || Infinity, x.scores[0]);
+  playRobot({
+    robot: { ...DEFAULT_ROBOT, ...(state.profile.robot || {}) },
+    best,
+    hero: heroFor,
+    onRobot: (r) => { state.profile.robot = r; save(state); },
+    onFinish: (r) => { state.games.push({ id: uid(), ts: Date.now(), ...r }); commit(); },
   });
 }
 
@@ -1280,6 +1300,7 @@ const ACTIONS = {
   'values-view': () => valuesSheet(),
   'game-sort': (b) => startSort(!!b.dataset.fresh),
   'game-kitchen': () => startKitchen(),
+  'game-robot': () => startRobot(),
   rate: (b) => {
     const id = b.dataset.id;
     const r = +b.dataset.r;
