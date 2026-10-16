@@ -162,3 +162,21 @@ test('game stars are capped at three games per day, games merge by id', async ()
   assert.equal(m.games.length, 6);
   assert.equal(m.choices.q001.a, 1);
 });
+
+test('value cards and pole indices', async () => {
+  const { VALUE_CARDS } = await import('../js/values.js');
+  const { SCHWARTZ, poleIndices, sortDiff, claudePrompt } = await import('../js/valuesort.js');
+  assert.ok(VALUE_CARDS.length >= 80);
+  assert.equal(new Set(VALUE_CARDS.map((c) => c.id)).size, VALUE_CARDS.length);
+  for (const c of VALUE_CARDS) assert.ok(SCHWARTZ[c.s], c.id);
+  // всё, что про заботу о других, «очень важно», остальное «не очень»
+  const decks = {};
+  for (const c of VALUE_CARDS) decks[c.id] = SCHWARTZ[c.s][1].includes('SELF_TRANSCENDENCE') ? 'v' : 'n';
+  const pi = poleIndices(decks, VALUE_CARDS);
+  assert.ok(pi.SELF_TRANSCENDENCE.index > 0 && pi.SELF_ENHANCEMENT.index < 0);
+  const prev = { ...decks, [VALUE_CARDS[0].id]: 'u' };
+  assert.deepEqual(sortDiff(prev, decks), { up: [], down: [] });
+  const text = claudePrompt([{ ts: 1, decks: prev }, { ts: 2, decks }], VALUE_CARDS);
+  assert.match(text, /Никаких диагнозов/);
+  assert.match(text, /Изменения с прошлого/);
+});

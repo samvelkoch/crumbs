@@ -1,11 +1,11 @@
 // Офлайн-режим: файлы приложения кэшируются при установке.
 // Сервис-воркер обслуживает только собственные файлы сайта и не видит данных из IndexedDB.
-const VERSION = 'v2.5.0';
+const VERSION = 'v2.6.0';
 const CACHE = 'detective-' + VERSION;
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest',
   'js/app.js', 'js/dates.js', 'js/foods.js', 'js/radar.js', 'js/store.js', 'js/backup.js',
-  'js/mascots.js', 'js/tips.js', 'js/wisdom.js', 'js/games.js', 'js/choices.js', 'js/game.js', 'js/demo.js',
+  'js/mascots.js', 'js/tips.js', 'js/wisdom.js', 'js/games.js', 'js/choices.js', 'js/values.js', 'js/valuesort.js', 'js/game.js', 'js/demo.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

@@ -187,3 +187,117 @@ export function playCatch({ players, hero, onFinish }) {
   };
   count();
 }
+
+// ---------------------------------------------------------------- «Что для меня важно»
+
+const SORT_DECKS = [
+  { id: 'v', emoji: '❤️', label: 'Очень важно' },
+  { id: 'i', emoji: '👍', label: 'Важно' },
+  { id: 'n', emoji: '🤷', label: 'Не очень' },
+  { id: 'u', emoji: '❓', label: 'Не знаю' },
+];
+const SORT_CHEER = ['Записала!', 'Интересно!', 'Принято.', 'Хм, понятно.', 'Так и запишем.', 'Ага!'];
+
+// cards: [{ id, e, n, d }], draft: { order, decks } для продолжения, onSave(draft) на паузе,
+// onFinish(decks) когда всё разложено и проверено
+export function playSort({ cards, hero, draft, onSave, onFinish }) {
+  const el = layer('sort');
+  const byId = new Map(cards.map((c) => [c.id, c]));
+  const order = (draft?.order || shuffle(cards.map((c) => c.id))).filter((id) => byId.has(id));
+  for (const c of cards) if (!order.includes(c.id)) order.push(c.id);
+  const decks = { ...(draft?.decks || {}) };
+  const history = [];
+  let pos = order.findIndex((id) => !decks[id]);
+  const stop = () => { document.removeEventListener('keydown', onKey); closeLayer(el); };
+  const pause = () => { onSave?.({ order, decks }); stop(); };
+
+  const head = (sub) => `<div class="g-head"><button type="button" class="g-close" data-pause aria-label="Пауза, продолжить потом">✕</button>
+    <div class="g-title">Что для меня важно</div><div class="g-hint">${sub}</div></div>`;
+
+  const showCard = () => {
+    if (pos < 0) return review();
+    const c = byId.get(order[pos]);
+    const done = Object.keys(decks).length;
+    el.innerHTML = `${head('Правильных ответов нет. Выбирай, как чувствуешь')}
+      <div class="s-wrap">
+        <div class="progress s-prog"><i style="width:${(done / order.length) * 100}%"></i></div>
+        <div class="small muted s-count">${done} из ${order.length}</div>
+        <div class="s-stage"><div class="s-hero">${hero('pusya', 'happy', 110)}</div>
+          <div class="s-card" aria-live="polite"><div class="s-e">${c.e}</div><div class="s-n">${esc(c.n)}</div><div class="s-d">${esc(c.d)}</div></div></div>
+        <div class="s-say" data-say></div>
+        <div class="s-decks">${SORT_DECKS.map((d) => `<button type="button" class="s-deck d-${d.id}" data-deck="${d.id}"><span>${d.emoji}</span>${d.label}</button>`).join('')}</div>
+        <div class="s-foot"><button type="button" class="pill-btn ghost" data-back ${history.length ? '' : 'disabled'}>↩ Назад</button>
+          <button type="button" class="pill-btn ghost" data-pause>⏸ Продолжу потом</button></div>
+      </div>`;
+  };
+
+  const put = (d) => {
+    const id = order[pos];
+    decks[id] = d;
+    history.push(id);
+    const card = el.querySelector('.s-card');
+    card?.classList.add('fly-' + d);
+    const say = el.querySelector('[data-say]');
+    if (say) say.textContent = pickOne(SORT_CHEER);
+    pos = order.findIndex((x) => !decks[x]);
+    setTimeout(showCard, reduced() ? 0 : 260);
+  };
+
+  const review = () => {
+    el.innerHTML = `${head('Посмотри, всё ли так. Нажми на карточку, чтобы переложить её')}
+      <div class="s-review">${SORT_DECKS.map((d) => {
+        const l = order.filter((id) => decks[id] === d.id);
+        return `<section class="s-col d-${d.id}"><h3>${d.emoji} ${d.label} <span>${l.length}</span></h3>
+          <div class="s-chips">${l.map((id) => `<button type="button" class="s-chip" data-move="${id}">${byId.get(id).e} ${esc(byId.get(id).n)}</button>`).join('') || '<span class="small muted">пусто</span>'}</div></section>`;
+      }).join('')}</div>
+      <div class="s-foot"><button type="button" class="pill-btn" data-done>Готово!</button></div>`;
+  };
+
+  const moveSheet = (id) => {
+    const c = byId.get(id);
+    const box = document.createElement('div');
+    box.className = 's-move';
+    box.innerHTML = `<div class="s-move-in"><div class="s-e">${c.e}</div><b>${esc(c.n)}</b><div class="small muted">${esc(c.d)}</div>
+      <div class="s-decks">${SORT_DECKS.map((d) => `<button type="button" class="s-deck d-${d.id}" data-to="${d.id}" aria-pressed="${decks[id] === d.id}"><span>${d.emoji}</span>${d.label}</button>`).join('')}</div></div>`;
+    box.addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-to]');
+      if (b) decks[id] = b.dataset.to;
+      if (b || ev.target === box) { box.remove(); review(); }
+    });
+    el.appendChild(box);
+  };
+
+  const finish = () => {
+    const top = order.filter((id) => decks[id] === 'v').map((id) => byId.get(id));
+    el.innerHTML = `<div class="g-end">
+      <div class="g-end-heroes">${hero('medok', 'cheer', 110)}${hero('pusya', 'cheer', 120)}</div>
+      <h2>Готово! Спасибо, что поделилась.</h2>
+      <p class="g-end-note">Медок и Пуся теперь знают тебя чуть лучше. Через какое-то время можно разложить карточки снова и посмотреть, что изменилось.</p>
+      ${top.length ? `<div class="g-end-learn"><div class="g-end-cap">❤️ Самое важное для тебя</div>${top.map((c) => `<span class="chip small">${c.e} ${esc(c.n)}</span>`).join('')}</div>` : ''}
+      <div class="g-end-btns"><button type="button" class="pill-btn" data-exit>Ура!</button></div></div>`;
+    onFinish?.({ ...decks });
+  };
+
+  el.addEventListener('click', (ev) => {
+    const t = ev.target;
+    if (t.closest('[data-pause]')) return pause();
+    if (t.closest('[data-exit]')) return stop();
+    if (t.closest('[data-done]')) return finish();
+    const d = t.closest('[data-deck]');
+    if (d && !d.closest('.s-move') && pos >= 0) return put(d.dataset.deck);
+    if (t.closest('[data-back]') && history.length) {
+      const id = history.pop();
+      delete decks[id];
+      pos = order.indexOf(id);
+      return showCard();
+    }
+    const m = t.closest('[data-move]');
+    if (m) moveSheet(m.dataset.move);
+  });
+  const onKey = (ev) => {
+    if (ev.key === 'Escape') pause();
+    else if (pos >= 0 && ['1', '2', '3', '4'].includes(ev.key)) put(SORT_DECKS[+ev.key - 1].id);
+  };
+  document.addEventListener('keydown', onKey);
+  showCard();
+}
