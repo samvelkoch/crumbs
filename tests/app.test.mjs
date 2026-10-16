@@ -135,3 +135,30 @@ test('оценки советов при слиянии: побеждает бо
   const b = { ...emptyState(), reactions: { f001: { r: -1, t: 20 }, d001: { r: 1, t: 5 }, x001: { r: 0, t: 1 } } };
   assert.deepEqual(merge(a, b).reactions, { f001: { r: -1, t: 20 }, d001: { r: -1, t: 50 }, x001: { r: 0, t: 1 } });
 });
+
+test('choices corpus is well-formed', async () => {
+  const { CHOICES, CHOICE_THEMES } = await import('../js/choices.js');
+  assert.ok(CHOICES.length >= 60);
+  assert.equal(new Set(CHOICES.map((c) => c.id)).size, CHOICES.length);
+  for (const c of CHOICES) {
+    assert.ok(CHOICE_THEMES[c.theme], c.id);
+    assert.ok(['medok', 'pusya'].includes(c.who), c.id);
+    assert.ok(c.options.length >= 2 && c.options.every((o) => o.t && o.reply), c.id);
+  }
+});
+
+test('game stars are capped at three games per day, games merge by id', async () => {
+  const { stars } = await import('../js/game.js');
+  const { emptyState, merge } = await import('../js/store.js');
+  const s = emptyState();
+  const base = stars(s);
+  const t = Date.UTC(2026, 9, 16, 10);
+  s.games = [1, 2, 3, 4, 5].map((i) => ({ id: 'g' + i, ts: t + i * 1000, g: 'catch', scores: [7], of: 14 }));
+  assert.equal(stars(s) - base, 15);
+  const o = emptyState();
+  o.games = [s.games[0], { id: 'x', ts: t, g: 'catch', scores: [3], of: 14 }];
+  o.choices = { q001: { a: 1, t: 5 } };
+  const m = merge(s, o);
+  assert.equal(m.games.length, 6);
+  assert.equal(m.choices.q001.a, 1);
+});

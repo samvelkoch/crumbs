@@ -80,6 +80,10 @@ export function stars(state) {
     if (plateOf(list).size === 4) total += 20;
   }
   total += state.cases.filter((c) => c.closed).length * 50;
+  // мини-игры: 5 звёзд за игру, не больше трёх игр в день
+  const perDay = new Map();
+  for (const g of state.games || []) perDay.set(dayKey(g.ts), Math.min(3, (perDay.get(dayKey(g.ts)) || 0) + 1));
+  for (const n of perDay.values()) total += n * 5;
   return total;
 }
 
