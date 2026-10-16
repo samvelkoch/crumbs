@@ -13,9 +13,11 @@ import { encryptState, decryptBackup, BackupError } from './backup.js';
 import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.js';
 import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
+import { playCatch } from './games.js';
+import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.4.1';
+const VERSION = '2.5.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -112,6 +114,12 @@ function toast(text, undo) {
 
 function say(who, text, mood = 'happy', cat = null, wid = null) {
   ui.speech = { who, text, mood, cat, wid };
+}
+
+// Вопрос-выбор от героя: сначала те, на которые ещё не отвечали
+function nextChoice(who) {
+  const pool = CHOICES.filter((c) => c.who === who && !state.choices[c.id]);
+  return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 }
 
 // Загадка: ответ спрятан, открывается нажатием
@@ -235,7 +243,7 @@ function render() {
   }
   $('#tabbar').classList.remove('hidden');
   for (const t of document.querySelectorAll('.tab')) t.setAttribute('aria-current', t.dataset.tab === ui.tab ? 'page' : 'false');
-  const views = { today: renderToday, diary: renderDiary, radar: renderRadar, more: renderMore };
+  const views = { today: renderToday, diary: renderDiary, radar: renderRadar, games: renderGames, more: renderMore };
   app.innerHTML = renderTop() + `<main class="view" id="view">${views[ui.tab]()}</main>`;
 }
 
@@ -290,7 +298,8 @@ function renderToday() {
   return `
   ${state.profile.demo ? `<div class="banner"><span>👀 Сейчас показан пример. Твои записи появятся после того, как его убрать.</span><button class="pill-btn soft" data-action="demo-clear">Убрать</button></div>` : ''}
   <section class="stage" aria-label="Медок и Пуся">
-    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}${sp.cat ? ` · ${WISDOM_CATS[sp.cat].emoji} ${esc(WISDOM_CATS[sp.cat].label)}` : ''}</span>${sp.cat ? wisdomTextHTML(sp.text) : esc(sp.text)}${rateHTML(sp.wid || phraseId(sp.text))}</div>
+    <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}${sp.cat ? ` · ${WISDOM_CATS[sp.cat].emoji} ${esc(WISDOM_CATS[sp.cat].label)}` : ''}</span>${sp.choice ? `${esc(sp.text)}<div class="choice-opts">${CHOICES.find((c) => c.id === sp.choice).options.map((o, i) => `<button type="button" class="choice-opt" data-action="choose" data-id="${sp.choice}" data-a="${i}">${esc(o.t)}</button>`).join('')}</div>`
+      : `${sp.cat ? wisdomTextHTML(sp.text) : esc(sp.text)}${rateHTML(sp.wid || phraseId(sp.text))}`}</div>
     <div class="tap-hint">Нажми на Медка или Пусю, у них есть что рассказать</div>
     <div class="mascots">
       <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 98)}<span class="name">Медок</span></button>
@@ -490,6 +499,50 @@ function renderRadar() {
   </details>`;
 }
 
+// ---------------------------------------------------------------- игры
+
+const heroFor = (who, mood, size) => (who === 'medok' ? medokSVG(mood, Math.round(size * 0.85)) : pusyaSVG(mood, size));
+
+function gameStats(g) {
+  const list = state.games.filter((x) => x.g === g);
+  const solo = list.filter((x) => x.mode === 'solo');
+  return { n: list.length, best: solo.length ? Math.max(...solo.map((x) => x.scores[0])) : null };
+}
+
+function renderGames() {
+  const c = gameStats('catch');
+  const me = state.profile.name || 'Игрок 1';
+  return `
+  <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico">🍎</span><div><h2>Полезное или вредное?</h2>
+      <p class="small muted">Медок и Пуся подкидывают еду. Полезное ловим и едим, от вредного отказываемся. Чем дальше, тем быстрее.</p></div></div>
+    ${c.n ? `<p class="small muted">Сыграно ${c.n} ${plural(c.n, 'раз', 'раза', 'раз')}${c.best !== null ? ` · рекорд ${c.best} из 14` : ''}</p>` : ''}
+    <div class="gc-btns">
+      <button type="button" class="pill-btn" data-action="game-catch" data-mode="pusya">🐒 Играть с Пусей</button>
+      <button type="button" class="pill-btn soft" data-action="game-catch" data-mode="medok">🦔 Играть с Медком</button>
+      <button type="button" class="pill-btn ghost" data-action="game-catch" data-mode="duo">👯 Вдвоём</button>
+    </div>
+    <p class="small muted">Вдвоём: экран делится пополам, ${esc(me)} играет за Пусю слева, второй игрок за Медка справа.</p>
+  </section>
+  <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico">🧺</span><div><h2>Лавка и кухня</h2>
+      <p class="small muted">Скоро: собираем продукты на прилавках по рецепту и готовим блюдо для кого-то из близких.</p></div></div>
+  </section>`;
+}
+
+function startCatch(mode) {
+  const me = state.profile.name || 'Игрок 1';
+  const players = mode === 'duo' ? [{ who: 'pusya', name: me }, { who: 'medok', name: 'Игрок 2' }] : [{ who: mode, name: me }];
+  playCatch({
+    players,
+    hero: heroFor,
+    onFinish: (r) => {
+      state.games.push({ id: uid(), ts: Date.now(), ...r });
+      commit();
+    },
+  });
+}
+
 function renderMore() {
   const total = stars(state);
   const rank = rankOf(total);
@@ -499,7 +552,7 @@ function renderMore() {
     <div class="rank-line"><span class="big">${rank.emoji}</span><div><h2>${esc(rank.title)}</h2>
       <p class="small muted">${rank.next ? `До звания «${esc(rank.next.title)}» ещё ${rank.toNext} ⭐` : 'Высшее звание агентства!'}</p></div></div>
     <div class="progress"><i style="width:${rank.progress * 100}%"></i></div>
-    <p class="small muted">⭐ 10 за еду и замер кожи, 5 за улику, 2 за стакан воды или напитка без сахара, 20 за супер-тарелку, 50 за закрытое дело.</p>
+    <p class="small muted">⭐ 10 за еду и замер кожи, 5 за улику, 2 за стакан воды или напитка без сахара, 20 за супер-тарелку, 5 за игру (до трёх в день), 50 за закрытое дело.</p>
   </section>
 
   <section class="card">
@@ -524,6 +577,7 @@ function renderMore() {
     <button type="button" class="row" data-action="backup"><span class="ico">🔐</span><span class="txt"><span class="t">Сохранить копию</span><span class="d">Зашифрованный файл с паролем семьи</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="restore"><span class="ico">📥</span><span class="txt"><span class="t">Загрузить копию</span><span class="d">Перенести записи с другого телефона или планшета</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="install"><span class="ico">📲</span><span class="txt"><span class="t">Установить как приложение</span><span class="d">Иконка на экране, работает без интернета</span></span><span class="chev">›</span></button>
+    <button type="button" class="row" data-action="choices-view"><span class="ico">🧭</span><span class="txt"><span class="t">Выборы и ценности</span><span class="d">${Object.keys(state.choices).length ? `Ответов: ${Object.keys(state.choices).length}. Как ребёнок отвечает на вопросы героев` : 'Ответы на вопросы героев появятся здесь'}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="reactions"><span class="ico">💬</span><span class="txt"><span class="t">Реакции на советы</span><span class="d">${Object.keys(state.reactions).length ? `Оценено ${Object.keys(state.reactions).length}: какие советы нравятся, а какие нет` : 'Пока оценок нет'}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="privacy"><span class="ico">🔒</span><span class="txt"><span class="t">Где хранятся данные</span><span class="d">Только на этом устройстве</span></span><span class="chev">›</span></button>
   </section>
@@ -749,6 +803,27 @@ function wisdomSheet(cat) {
     title: `${c.emoji} ${c.label}`,
     body: `<p class="small muted">Собрано ${got.length} из ${list.length}. Остальные расскажут Медок и Пуся, если на них нажимать.</p>
       ${got.length ? got.map((w) => `<div class="wisdom-item"><span class="who">${w[2] === 'medok' ? '🦔' : '🐒'}</span><span class="wtext">${wisdomTextHTML(w[3])}${rateHTML(w[0])}</span></div>`).join('') : '<div class="empty">Пока пусто. Нажми на героя на главной.</div>'}`,
+    foot: '<button type="button" class="pill-btn" data-sa="close">Понятно</button>',
+    actions: { close: () => closeSheet() },
+  });
+}
+
+// Для взрослых: ответы на вопросы-выборы, по темам. Не тест, а поводы поговорить.
+function choicesSheet() {
+  const answered = CHOICES.filter((c) => state.choices[c.id]);
+  const byTheme = Object.entries(CHOICE_THEMES).map(([th, t]) => {
+    const l = answered.filter((c) => c.theme === th);
+    if (!l.length) return '';
+    return `<div class="cat-title">${t.emoji} ${esc(t.label)} · ${l.length}</div>${l.map((c) => {
+      const a = state.choices[c.id].a;
+      return `<div class="choice-row"><div class="cq">${esc(c.q)}</div><div class="ca">→ ${esc(c.options[a]?.t || '')}</div>
+        <div class="small muted">${shortDay(dayKey(state.choices[c.id].t))} · другие варианты: ${c.options.filter((_, i) => i !== a).map((o) => esc(o.t)).join(' / ')}</div></div>`;
+    }).join('')}`;
+  }).join('');
+  openSheet({
+    title: 'Выборы и ценности',
+    body: `<p class="small muted">Иногда Медок и Пуся задают вопросы про дружбу, честность, чувства и семью. Правильных ответов нет, герои принимают любой. Это не тест, а повод поговорить, если какой-то ответ удивил. Отвечено ${answered.length} из ${CHOICES.length}.</p>
+      ${answered.length ? byTheme : '<div class="empty">Ответов пока нет. Вопросы появляются, когда нажимаешь на героев на главной.</div>'}`,
     foot: '<button type="button" class="pill-btn" data-sa="close">Понятно</button>',
     actions: { close: () => closeSheet() },
   });
@@ -1090,7 +1165,17 @@ const ACTIONS = {
   'water-add': waterAdd,
   'water-remove': waterRemove,
   sweet: () => sweetSheet(),
+  'game-catch': (b) => startCatch(b.dataset.mode),
   wisdom: (b) => wisdomSheet(b.dataset.cat),
+  choose: (b) => {
+    const c = CHOICES.find((x) => x.id === b.dataset.id);
+    if (!c) return;
+    const a = +b.dataset.a;
+    state.choices[c.id] = { a, t: Date.now() };
+    say(c.who, c.options[a].reply, 'happy');
+    commit();
+  },
+  'choices-view': () => choicesSheet(),
   rate: (b) => {
     const id = b.dataset.id;
     const r = +b.dataset.r;
@@ -1107,8 +1192,12 @@ const ACTIONS = {
   talk: (b) => {
     const who = b.dataset.who;
     ui.seed += 7;
-    // каждая пятая реплика про само приложение, остальные из копилки мудрости
-    if (ui.seed % 5 === 0) {
+    // примерно каждая четвёртая реплика — вопрос-выбор, каждая пятая — про само приложение,
+    // остальные из копилки мудрости
+    const ch = ui.seed % 4 === 1 ? nextChoice(who) : null;
+    if (ch) {
+      ui.speech = { who, text: ch.q, mood: 'think', choice: ch.id, cat: null, wid: null };
+    } else if (ui.seed % 5 === 0) {
       let [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, ui.seed);
       for (let i = 0; w !== who && i < 12; i++) [w, text, mood] = contextTip({ hour: 12, waterToday: 1, mealsToday: 1, skinToday: true, plate: 0 }, (ui.seed += 1));
       say(who, text, mood);

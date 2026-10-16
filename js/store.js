@@ -15,6 +15,8 @@ export function emptyState() {
     seenBadges: [],
     wisdom: [], // id собранных советов из копилки
     reactions: {}, // id совета -> { r: -1 | 0 | 1, t: когда оценили }
+    games: [], // сыгранные мини-игры: { id, ts, g, mode, scores, of }
+    choices: {}, // id вопроса-выбора -> { a: индекс ответа, t }
   };
 }
 
@@ -63,6 +65,8 @@ function normalize(s) {
     seenBadges: Array.isArray(s.seenBadges) ? s.seenBadges : [],
     wisdom: Array.isArray(s.wisdom) ? s.wisdom : [],
     reactions: s.reactions && typeof s.reactions === 'object' ? s.reactions : {},
+    games: Array.isArray(s.games) ? s.games : [],
+    choices: s.choices && typeof s.choices === 'object' ? s.choices : {},
   };
 }
 
@@ -155,5 +159,7 @@ export function merge(local, incoming) {
     seenBadges: [...new Set([...a.seenBadges, ...b.seenBadges])],
     wisdom: [...new Set([...(a.wisdom || []), ...(b.wisdom || [])])],
     reactions: mergeReactions(a.reactions, b.reactions),
+    choices: mergeReactions(a.choices, b.choices),
+    games: [...new Map([...(b.games || []), ...(a.games || [])].map((g) => [g.id, g])).values()].sort((x, y) => x.ts - y.ts),
   };
 }
