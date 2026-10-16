@@ -129,3 +129,9 @@ test('напитки: вода и без сахара в цель, сладки�
   assert.deepEqual(entryKeys(day[2]), ['bubbletea', 'fam:dairy']);
   assert.ok(entryKeys({ type: 'meal', foods: ['soup'], place: 'school' }).includes('f:school'));
 });
+
+test('оценки советов при слиянии: побеждает более поздняя', () => {
+  const a = { ...emptyState(), reactions: { f001: { r: 1, t: 10 }, d001: { r: -1, t: 50 } } };
+  const b = { ...emptyState(), reactions: { f001: { r: -1, t: 20 }, d001: { r: 1, t: 5 }, x001: { r: 0, t: 1 } } };
+  assert.deepEqual(merge(a, b).reactions, { f001: { r: -1, t: 20 }, d001: { r: -1, t: 50 }, x001: { r: 0, t: 1 } });
+});

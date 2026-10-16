@@ -196,6 +196,22 @@ p { margin: 0; }
 .drink-btns { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 6px; }
 .sweet-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; }
 .center { text-align: center; }
+.answer { margin-top: 6px; }
+.answer summary { display: inline-block; cursor: pointer; font-weight: 800; color: var(--brand); padding: 4px 10px; border-radius: 999px; background: #f3edff; list-style: none; }
+.answer summary::-webkit-details-marker { display: none; }
+.answer[open] summary { display: none; }
+.answer[open] { font-weight: 800; color: var(--brand); }
+.rate { display: flex; gap: 8px; margin-top: 8px; }
+.rate-btn { font-size: 1.35rem; width: 42px; height: 38px; border-radius: 12px; background: #fff; border: 1.5px solid var(--line); opacity: .75; }
+.rate-btn[aria-pressed='true'] { opacity: 1; border-color: var(--brand); background: #f3edff; }
+.rate-btn.pop { animation: pop .25s ease; }
+@keyframes pop { 50% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .rate-btn.pop { animation: none; } }
+.wtext { display: block; min-width: 0; }
+.rtable { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.rtable th, .rtable td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.rtable .num, .rtable th:not(:first-child) { text-align: center; font-variant-numeric: tabular-nums; }
+.rtable tfoot td { font-weight: 800; }
 .tap-hint { text-align: center; font-size: .75rem; color: var(--muted); margin-top: 6px; }
 .wisdom-item { display: flex; gap: 10px; padding: 10px 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; line-height: 1.4; }
 .wisdom-item .who { font-size: 1.2rem; }

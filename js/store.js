@@ -14,6 +14,7 @@ export function emptyState() {
     tombstones: {}, // id -> когда удалено, нужно для слияния бэкапов с двух устройств
     seenBadges: [],
     wisdom: [], // id собранных советов из копилки
+    reactions: {}, // id совета -> { r: -1 | 0 | 1, t: когда оценили }
   };
 }
 
@@ -61,6 +62,7 @@ function normalize(s) {
     tombstones: s.tombstones && typeof s.tombstones === 'object' ? s.tombstones : {},
     seenBadges: Array.isArray(s.seenBadges) ? s.seenBadges : [],
     wisdom: Array.isArray(s.wisdom) ? s.wisdom : [],
+    reactions: s.reactions && typeof s.reactions === 'object' ? s.reactions : {},
   };
 }
 
@@ -124,6 +126,13 @@ export const uid = () =>
  * Слияние двух состояний (например, телефон папы + iPad).
  * Записи объединяются по id, побеждает более свежая правка; удалённые не воскресают.
  */
+// Оценки советов: по каждому совету побеждает более поздняя
+function mergeReactions(a = {}, b = {}) {
+  const out = { ...a };
+  for (const [id, v] of Object.entries(b)) if (!out[id] || (v.t || 0) > (out[id].t || 0)) out[id] = v;
+  return out;
+}
+
 export function merge(local, incoming) {
   const a = normalize(local);
   const b = normalize(incoming);
@@ -145,5 +154,6 @@ export function merge(local, incoming) {
     tombstones: tomb,
     seenBadges: [...new Set([...a.seenBadges, ...b.seenBadges])],
     wisdom: [...new Set([...(a.wisdom || []), ...(b.wisdom || [])])],
+    reactions: mergeReactions(a.reactions, b.reactions),
   };
 }
