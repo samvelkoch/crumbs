@@ -29,27 +29,71 @@ export function closeLayer(el) {
 // ---------------------------------------------------------------- «Полезное или вредное?»
 
 // ok: полезное, можно каждый день. Остальное лучше есть иногда.
+// t: «хитрый» продукт (выглядит полезным или наоборот), появляется со второго уровня; why: что запомнить.
 export const CATCH_FOODS = [
+  // овощи и фрукты
   { e: '🍎', n: 'Яблоко', ok: true }, { e: '🥕', n: 'Морковь', ok: true }, { e: '🥒', n: 'Огурец', ok: true },
   { e: '🍌', n: 'Банан', ok: true }, { e: '🥦', n: 'Брокколи', ok: true }, { e: '🍅', n: 'Помидор', ok: true },
   { e: '🍐', n: 'Груша', ok: true }, { e: '🍇', n: 'Виноград', ok: true }, { e: '🫐', n: 'Черника', ok: true },
-  { e: '🥣', n: 'Каша', ok: true }, { e: '🐟', n: 'Рыба', ok: true }, { e: '🥚', n: 'Яйцо', ok: true },
-  { e: '💧', n: 'Вода', ok: true }, { e: '🥛', n: 'Кефир', ok: true }, { e: '🍚', n: 'Рис', ok: true },
-  { e: '🍗', n: 'Курица', ok: true }, { e: '🧀', n: 'Сыр', ok: true }, { e: '🫑', n: 'Перец', ok: true },
   { e: '🍊', n: 'Мандарин', ok: true }, { e: '🥝', n: 'Киви', ok: true }, { e: '🌽', n: 'Кукуруза', ok: true },
+  { e: '🫑', n: 'Перец', ok: true }, { e: '🍉', n: 'Арбуз', ok: true }, { e: '🍑', n: 'Персик', ok: true },
+  { e: '🍒', n: 'Вишня', ok: true }, { e: '🍓', n: 'Клубника', ok: true }, { e: '🥬', n: 'Капуста', ok: true },
+  { e: '🫛', n: 'Горошек', ok: true }, { e: '🥔', n: 'Варёная картошка', ok: true }, { e: '🍈', n: 'Дыня', ok: true },
+  { e: '🍍', n: 'Ананас', ok: true }, { e: '🥭', n: 'Манго', ok: true }, { e: '🎃', n: 'Тыква', ok: true },
+  { e: '🧅', n: 'Лук в супе', ok: true }, { e: '🥑', n: 'Авокадо', ok: true },
+  // каши, белок, молочное
+  { e: '🥣', n: 'Каша', ok: true }, { e: '🐟', n: 'Рыба', ok: true }, { e: '🥚', n: 'Яйцо', ok: true },
+  { e: '🍚', n: 'Рис', ok: true }, { e: '🍗', n: 'Курица', ok: true }, { e: '🧀', n: 'Сыр', ok: true },
+  { e: '🥛', n: 'Кефир', ok: true }, { e: '💧', n: 'Вода', ok: true }, { e: '🍲', n: 'Суп', ok: true },
+  { e: '🫘', n: 'Фасоль', ok: true }, { e: '🥩', n: 'Котлета на пару', ok: true }, { e: '🍝', n: 'Макароны', ok: true },
+  { e: '🍞', n: 'Хлеб', ok: true }, { e: '🥞', n: 'Сырники', ok: true }, { e: '🍳', n: 'Омлет', ok: true },
+  // хитрые полезные
+  { e: '🥣', n: 'Гречка', ok: true, t: 1, why: 'простая каша, можно каждый день' },
+  { e: '🍶', n: 'Йогурт без сахара', ok: true, t: 1, why: 'без сахара, значит, полезный' },
+  { e: '🫖', n: 'Чай без сахара', ok: true, t: 1, why: 'считается как вода' },
+  { e: '🍵', n: 'Компот без сахара', ok: true, t: 1, why: 'без сахара, идёт в напитки дня' },
+  { e: '🥗', n: 'Салат из овощей', ok: true, t: 1, why: 'овощи, только без майонеза' },
+  { e: '🧀', n: 'Творог', ok: true, t: 1, why: 'молочное и сытное' },
+  { e: '🍎', n: 'Печёное яблоко', ok: true, t: 1, why: 'десерт без сахара, полезный' },
+  { e: '🌾', n: 'Цельнозерновой хлеб', ok: true, t: 1, why: 'из цельного зерна' },
+  { e: '🍠', n: 'Печёная картошка', ok: true, t: 1, why: 'запечённая, а не жареная' },
+  // лучше иногда
   { e: '🍬', n: 'Конфета', ok: false }, { e: '🍭', n: 'Леденец', ok: false }, { e: '🥤', n: 'Газировка', ok: false },
   { e: '🍟', n: 'Картошка фри', ok: false }, { e: '🍩', n: 'Пончик', ok: false }, { e: '🍰', n: 'Торт', ok: false },
   { e: '🍫', n: 'Шоколадка', ok: false }, { e: '🍪', n: 'Печенье', ok: false }, { e: '🌭', n: 'Хот-дог', ok: false },
   { e: '🍔', n: 'Бургер', ok: false }, { e: '🥨', n: 'Снеки', ok: false }, { e: '🧁', n: 'Капкейк', ok: false },
-  { e: '🍦', n: 'Мороженое', ok: false }, { e: '🧋', n: 'Баббл ти', ok: false },
+  { e: '🍦', n: 'Мороженое', ok: false }, { e: '🧋', n: 'Баббл ти', ok: false }, { e: '🍕', n: 'Пицца', ok: false },
+  { e: '🥐', n: 'Круассан', ok: false }, { e: '🍿', n: 'Попкорн с карамелью', ok: false }, { e: '🎂', n: 'Пирожное', ok: false },
+  { e: '🍡', n: 'Мармелад', ok: false }, { e: '🥧', n: 'Пирог с джемом', ok: false }, { e: '🧇', n: 'Вафли', ok: false },
+  { e: '🍯', n: 'Ложка варенья', ok: false }, { e: '🍘', n: 'Чипсы', ok: false }, { e: '🥓', n: 'Колбаса', ok: false },
+  // хитрые «иногда»
+  { e: '🧃', n: 'Сок из пакета', ok: false, t: 1, why: 'в нём много сахара, лучше целый фрукт' },
+  { e: '🍫', n: 'Батончик мюсли', ok: false, t: 1, why: 'выглядит полезным, но там много сахара' },
+  { e: '🥣', n: 'Сладкие хлопья', ok: false, t: 1, why: 'это скорее десерт, чем каша' },
+  { e: '🍶', n: 'Сладкий йогурт', ok: false, t: 1, why: 'в нём добавлен сахар' },
+  { e: '🍅', n: 'Кетчуп', ok: false, t: 1, why: 'сделан из помидоров, но там много сахара и соли' },
+  { e: '🥛', n: 'Молочный коктейль', ok: false, t: 1, why: 'молоко, но с сахаром и сиропом' },
+  { e: '🫖', n: 'Чай с тремя ложками сахара', ok: false, t: 1, why: 'сахар делает его сладким напитком' },
+  { e: '🥗', n: 'Салат с майонезом', ok: false, t: 1, why: 'в нём много майонеза' },
+  { e: '🍞', n: 'Сухарики', ok: false, t: 1, why: 'много соли и масла' },
+  { e: '🍊', n: 'Газировка со вкусом апельсина', ok: false, t: 1, why: 'апельсина там почти нет, только сахар' },
 ];
 
-const ROUND = 14; // продуктов на игрока за игру
+// Уровни: сколько продуктов, как быстро летят, есть ли хитрые
+export const CATCH_LEVELS = [
+  { id: 1, emoji: '🌱', label: 'Легко', hint: '14 продуктов, медленно', n: 14, slow: 3200, fast: 1700, tricky: 0 },
+  { id: 2, emoji: '🔥', label: 'Средне', hint: '20 продуктов, есть хитрые', n: 20, slow: 2600, fast: 1400, tricky: 4 },
+  { id: 3, emoji: '⚡', label: 'Сложно', hint: '26 продуктов, быстро и хитро', n: 26, slow: 2100, fast: 1100, tricky: 8 },
+];
 
-// Последовательность: поровну полезного и «иногда», перемешано
-export function catchSequence(n = ROUND) {
-  const ok = shuffle(CATCH_FOODS.filter((f) => f.ok)).slice(0, Math.ceil(n / 2));
-  const no = shuffle(CATCH_FOODS.filter((f) => !f.ok)).slice(0, Math.floor(n / 2));
+// Последовательность: поровну полезного и «иногда», хитрых сколько скажет уровень, перемешано
+export function catchSequence(n = 14, tricky = 0) {
+  const pickN = (list, k) => shuffle(list).slice(0, k);
+  const half = Math.ceil(n / 2);
+  const tOk = Math.ceil(tricky / 2);
+  const tNo = tricky - tOk;
+  const ok = [...pickN(CATCH_FOODS.filter((f) => f.ok && f.t), tOk), ...pickN(CATCH_FOODS.filter((f) => f.ok && !f.t), half - tOk)];
+  const no = [...pickN(CATCH_FOODS.filter((f) => !f.ok && f.t), tNo), ...pickN(CATCH_FOODS.filter((f) => !f.ok && !f.t), n - half - tNo)];
   return shuffle([...ok, ...no]);
 }
 
@@ -60,9 +104,31 @@ const WRONG_NO = ['Это вкусно, но лучше иногда.', 'Ой, �
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 
 // players: [{ who: 'pusya' | 'medok', name }], hero(who, mood, size) -> svg
-export function playCatch({ players, hero, onFinish }) {
+export function playCatch({ players, hero, level, startLevel = 1, onLevel, onFinish }) {
   const el = layer('catch');
-  const seq = catchSequence();
+  // сначала выбор уровня, потом игра
+  if (!level) {
+    let cur = startLevel;
+    const pick = () => {
+      el.innerHTML = `<div class="g-head"><button type="button" class="g-close" aria-label="Выйти из игры">✕</button>
+        <div class="g-title">Полезное или вредное?</div><div class="g-hint">Выбери уровень</div></div>
+        <div class="k-wrap">
+          <div class="k-levels" role="radiogroup" aria-label="Уровень">${CATCH_LEVELS.map((l) => `<button type="button" role="radio" class="k-level ${l.id === cur ? 'on' : ''}" aria-checked="${l.id === cur}" data-level="${l.id}"><span>${l.emoji}</span><b>${l.label}</b><small>${l.hint}</small></button>`).join('')}</div>
+          <button type="button" class="pill-btn" data-go>▶ Играть</button>
+          <p class="small muted" style="text-align:center">Всего продуктов в игре: ${CATCH_FOODS.length}. На «Средне» и «Сложно» попадаются хитрые: сок из пакета, батончик мюсли, чай без сахара.</p></div>`;
+    };
+    pick();
+    el.onclick = (ev) => {
+      if (ev.target.closest('.g-close')) return closeLayer(el);
+      const b = ev.target.closest('[data-level]');
+      if (b) { cur = +b.dataset.level; pick(); return; }
+      if (ev.target.closest('[data-go]')) { el.onclick = null; closeLayer(el); onLevel?.(cur); playCatch({ players, hero, level: cur, startLevel: cur, onLevel, onFinish }); }
+    };
+    return;
+  }
+  const LV = CATCH_LEVELS.find((l) => l.id === level) || CATCH_LEVELS[0];
+  const ROUND = LV.n;
+  const seq = catchSequence(LV.n, LV.tricky);
   const lanes = players.map((p) => ({ ...p, i: 0, score: 0, log: [], cur: null, done: false }));
   // в одиночной игре дорожка широкая, герой крупнее
   const hs = (l) => (players.length > 1 ? 130 : 190) - (l.who === 'medok' ? 10 : 0);
@@ -86,7 +152,7 @@ export function playCatch({ players, hero, onFinish }) {
   const launch = (l, k) => {
     if (l.i >= seq.length) { l.done = true; l.cur = null; laneEl(k).querySelector('[data-food]').textContent = ''; checkEnd(); return; }
     // скорость растёт к концу раунда
-    const dur = Math.max(1700, 3200 - l.i * 110);
+    const dur = Math.max(LV.fast, LV.slow - l.i * ((LV.slow - LV.fast) / (ROUND * 0.8)));
     l.cur = { f: seq[l.i], t0: performance.now(), dur, answered: false };
     const food = laneEl(k).querySelector('[data-food]');
     food.textContent = l.cur.f.e;
@@ -109,7 +175,7 @@ export function playCatch({ players, hero, onFinish }) {
     const f = l.cur.f;
     const right = ans === null ? false : ans === f.ok;
     if (right) l.score++;
-    l.log.push({ n: f.n, e: f.e, ok: f.ok, ans });
+    l.log.push({ n: f.n, e: f.e, ok: f.ok, why: f.why, ans });
     laneEl(k).querySelector('[data-score]').textContent = l.score;
     const food = laneEl(k).querySelector('[data-food]');
     const heroEl = laneEl(k).querySelector('[data-hero]');
@@ -152,11 +218,12 @@ export function playCatch({ players, hero, onFinish }) {
       <h2>${lanes.length > 1 ? (winners.length > 1 ? 'Ничья! Вы оба молодцы.' : `Победил игрок «${esc(winners[0].name)}»!`) : `${best} из ${ROUND}!`}</h2>
       ${lanes.length > 1 ? `<div class="g-end-scores">${lanes.map((l) => `<div><span>${esc(l.name)}</span><b>${l.score}</b></div>`).join('')}</div>` : ''}
       <p class="g-end-note">${best >= ROUND - 1 ? 'Почти идеально! Медок записывает это в протокол.' : best >= ROUND / 2 ? 'Хорошая игра! С каждым разом получается лучше.' : 'Разминка засчитана. Попробуем ещё раз?'}</p>
-      ${uniq.length ? `<div class="g-end-learn"><div class="g-end-cap">Запомним</div>${uniq.map((x) => `<span class="chip small">${x.e} ${esc(x.n)}: ${x.ok ? 'полезное' : 'лучше иногда'}</span>`).join('')}</div>` : ''}
-      <div class="g-end-btns"><button type="button" class="pill-btn" data-again>Ещё раз</button><button type="button" class="pill-btn ghost" data-exit>Выйти</button></div>
+      ${uniq.length ? `<div class="g-end-learn"><div class="g-end-cap">Запомним</div>${uniq.map((x) => `<span class="chip small">${x.e} ${esc(x.n)}: ${x.ok ? 'полезное' : 'лучше иногда'}${x.why ? `, ${esc(x.why)}` : ''}</span>`).join('')}</div>` : ''}
+      <div class="g-end-btns"><button type="button" class="pill-btn" data-again>Ещё раз</button><button type="button" class="pill-btn soft" data-levels>Уровень</button><button type="button" class="pill-btn ghost" data-exit>Выйти</button></div>
     </div>`;
-    onFinish?.({ g: 'catch', mode: lanes.length > 1 ? 'duo' : 'solo', scores: lanes.map((l) => l.score), of: ROUND });
-    el.querySelector('[data-again]').onclick = () => { closeLayer(el); playCatch({ players, hero, onFinish }); };
+    onFinish?.({ g: 'catch', mode: lanes.length > 1 ? 'duo' : 'solo', scores: lanes.map((l) => l.score), of: ROUND, level: LV.id });
+    el.querySelector('[data-again]').onclick = () => { closeLayer(el); playCatch({ players, hero, level, startLevel: level, onLevel, onFinish }); };
+    el.querySelector('[data-levels]').onclick = () => { closeLayer(el); playCatch({ players, hero, startLevel: level, onLevel, onFinish }); };
     el.querySelector('[data-exit]').onclick = () => closeLayer(el);
   };
   const checkEnd = () => { if (lanes.every((l) => l.done)) setTimeout(finish, 300); };
