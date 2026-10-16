@@ -1,8 +1,8 @@
 // Мини-игры. Каждая игра рисуется в своём полноэкранном слое поверх приложения
 // и по окончании отдаёт результат в onFinish. Состояние приложения игры не трогают.
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const shuffle = (a) => {
+export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+export const shuffle = (a) => {
   const r = a.slice();
   for (let i = r.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -10,9 +10,9 @@ const shuffle = (a) => {
   }
   return r;
 };
-const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+export const reduced = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-function layer(cls) {
+export function layer(cls) {
   const el = document.createElement('div');
   el.className = 'game-layer ' + cls;
   el.setAttribute('role', 'dialog');
@@ -21,7 +21,7 @@ function layer(cls) {
   document.body.classList.add('game-open');
   return el;
 }
-function closeLayer(el) {
+export function closeLayer(el) {
   el.remove();
   document.body.classList.remove('game-open');
 }

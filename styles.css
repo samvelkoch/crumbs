@@ -590,3 +590,53 @@ body.game-open { overflow: hidden; }
 .k-cnt { position: absolute; top: 4px; right: 6px; min-width: 22px; height: 22px; border-radius: 11px; background: var(--brand); color: #fff; font-style: normal; font-weight: 900; font-size: .8rem; display: grid; place-items: center; }
 .k-ni b { color: var(--brand); }
 .k-list .pill-btn { margin-top: 4px; }
+
+/* Робот */
+.game-layer.robot { overflow-y: auto; }
+.gc-robot svg { display: block; }
+.rb-hub { display: flex; gap: 14px; align-items: center; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px; }
+.rb-hub > div:last-child { display: grid; gap: 6px; justify-items: start; }
+.rb-name { font-size: 1.3rem; font-weight: 900; }
+.rb-missions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.rb-mission { display: grid; gap: 3px; text-align: left; background: var(--card); border-radius: 16px; padding: 10px 12px; border: 2px solid var(--line); box-shadow: 0 3px 0 rgba(0, 0, 0, .05); }
+.rb-mission.locked { opacity: .5; }
+.rb-me2 { font-size: 1.7rem; }
+.rb-preview { display: grid; place-items: center; padding: 6px 0; }
+.rb-namefield { display: grid; gap: 4px; font-weight: 800; }
+.rb-namefield input { padding: 10px 12px; border-radius: 12px; border: 2px solid var(--line); font: inherit; font-weight: 700; background: #fff; }
+.rb-sec { display: grid; gap: 4px; }
+.rb-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.rb-opt { display: grid; justify-items: center; gap: 2px; padding: 10px 6px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); text-align: center; }
+.rb-opt span { font-size: 1.8rem; }
+.rb-opt small { font-size: .72rem; color: var(--muted); line-height: 1.25; }
+.rb-opt.on { border-color: var(--brand); background: var(--brand-soft); }
+.rb-colors { display: flex; gap: 10px; flex-wrap: wrap; }
+.rb-color { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px var(--line); }
+.rb-color.on { box-shadow: 0 0 0 3px var(--brand); }
+.rb-wrap { gap: 10px; }
+.rb-map { --cs: min(52px, calc((100vw - 48px) / var(--w))); position: relative; display: grid; grid-template-columns: repeat(var(--w), var(--cs)); grid-auto-rows: var(--cs); margin: 0 auto; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.rb-cell { position: relative; display: grid; place-items: center; font-size: calc(var(--cs) * .55); background: #f1f5f9; outline: 1px solid rgba(15, 23, 42, .06); }
+.rb-cell.t-wall { background: #cbd5e1; }
+.rb-cell.t-water { background: #7dd3fc; }
+.rb-cell.t-mud { background: #d6b38a; }
+.rb-cell.dark { background: #1e293b; }
+.rb-badge { position: absolute; right: 2px; top: 1px; font-size: calc(var(--cs) * .32); font-style: normal; font-weight: 900; color: var(--brand); }
+.rb-dot { position: absolute; width: 22%; height: 22%; border-radius: 50%; background: var(--brand); opacity: .45; }
+.rb-bot { position: absolute; left: 0; top: 0; width: var(--cs); height: var(--cs); display: grid; place-items: center; transform: translate(calc(var(--c) * var(--cs)), calc(var(--r) * var(--cs))); transition: transform .3s ease; pointer-events: none; }
+.rb-bot svg { width: 86%; height: auto; }
+.rb-arrow { position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 10px; font-style: normal; display: grid; place-items: center; }
+.rb-carry { position: absolute; bottom: -2px; left: -2px; font-size: 12px; font-style: normal; }
+.rb-say { opacity: 1; min-height: 2.6em; }
+.rb-energy { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #dcfce7; color: var(--green); font-size: .85rem; }
+.rb-prog { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; padding: 8px; border-radius: 14px; background: var(--card); border: 2px dashed var(--line); align-items: center; }
+.rb-chip { min-width: 40px; height: 40px; border-radius: 10px; background: var(--brand-soft); font-size: 1.2rem; font-weight: 900; display: inline-flex; align-items: center; justify-content: center; gap: 2px; padding: 0 6px; }
+.rb-chip small { font-size: .75rem; color: var(--brand); }
+.rb-chip.cur { background: var(--brand); color: #fff; }
+.rb-chip.cur small { color: #fff; }
+.rb-pal { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; }
+.rb-cmd { display: grid; place-items: center; gap: 2px; min-height: 64px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); font-size: 1.6rem; font-weight: 900; box-shadow: 0 3px 0 rgba(0, 0, 0, .06); }
+.rb-cmd span { font-size: .72rem; font-weight: 800; line-height: 1.1; text-align: center; }
+.rb-cmd:active { transform: translateY(2px); }
+.rb-mult { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.rb-x { min-width: 46px; height: 36px; border-radius: 10px; background: #fef3c7; font-weight: 900; }
+.rb-stars { font-size: 2rem; letter-spacing: 4px; }
