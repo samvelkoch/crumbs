@@ -132,8 +132,7 @@ p { margin: 0; }
 .mascot-btn { position: relative; display: grid; justify-items: center; gap: 0; padding: 4px; border-radius: 20px; }
 .mascot-btn .name { font-size: .78rem; font-weight: 800; color: var(--muted); margin-top: -4px; }
 .mascot { display: block; overflow: visible; }
-.stage .mascot.medok { width: clamp(112px, 30vw, 180px); height: auto; }
-.stage .mascot.pusya { width: clamp(98px, 26vw, 156px); height: auto; }
+.stage .mascot.medok, .stage .mascot.pusya { width: clamp(104px, 28vw, 160px); height: auto; }
 .mascot .m-body { transform-origin: 50% 90%; transform-box: fill-box; }
 .mascot.mood-cheer .m-body { animation: hop 1.1s ease-in-out infinite; }
 .mascot.mood-happy .m-body { animation: breathe 3.5s ease-in-out infinite; }

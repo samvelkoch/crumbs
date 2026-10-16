@@ -14,7 +14,7 @@ import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.
 import { contextTip, CHEERS, pick } from './tips.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -196,7 +196,7 @@ function renderOnboard() {
   return `<div class="onboard">
     <div class="stage">
       <div class="bubble" style="--tail:48%"><span class="who">Медок и Пуся</span>Привет! Мы агентство пищевых детективов. Будем вместе записывать еду и следить, как себя чувствует кожа. А Радар поищет следы.</div>
-      <div class="mascots"><div class="mascot-btn">${medokSVG('cheer', 128)}<span class="name">Медок</span></div><div class="mascot-btn">${pusyaSVG('cheer', 112)}<span class="name">Пуся</span></div></div>
+      <div class="mascots"><div class="mascot-btn">${medokSVG('cheer', 120)}<span class="name">Медок</span></div><div class="mascot-btn">${pusyaSVG('cheer', 120)}<span class="name">Пуся</span></div></div>
     </div>
     <div class="card" style="display:grid;gap:12px;text-align:left">
       <div class="field"><label for="obName">Как зовут сыщика?</label>
@@ -234,8 +234,8 @@ function renderToday() {
   <section class="stage" aria-label="Медок и Пуся">
     <div class="bubble" style="--tail:${sp.who === 'medok' ? '22%' : '72%'}" aria-live="polite"><span class="who">${sp.who === 'medok' ? '🦔 Медок' : '🐒 Пуся'}</span>${esc(sp.text)}</div>
     <div class="mascots">
-      <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 124)}<span class="name">Медок</span></button>
-      <button type="button" class="mascot-btn" data-action="talk" data-who="pusya" aria-label="Поговорить с Пусей">${pusyaSVG(pMood, 108)}<span class="name">Пуся</span></button>
+      <button type="button" class="mascot-btn" data-action="talk" data-who="medok" aria-label="Поговорить с Медком">${medokSVG(mMood, 116)}<span class="name">Медок</span></button>
+      <button type="button" class="mascot-btn" data-action="talk" data-who="pusya" aria-label="Поговорить с Пусей">${pusyaSVG(pMood, 116)}<span class="name">Пуся</span></button>
     </div>
   </section>
 
