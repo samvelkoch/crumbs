@@ -27,13 +27,9 @@ function fuzz(cx, cy, rx, ry, n, amp, seed, taper = 0) {
   return d + 'Z';
 }
 
-// open: глаза всегда открыты (у Пуси вышитые глаза не закрываются), радость видна по «улыбке» под глазом
+// open: глаза всегда открыты, как у игрушек (вышитые и бусинки не закрываются)
 function eyes(mood, lx, rx, y, r, color = '#111', open = false) {
-  if (open && (mood === 'happy' || mood === 'cheer')) {
-    return eyes('calm', lx, rx, y, r, color) + `<g fill="none" stroke="${color}" stroke-width="1.4" stroke-linecap="round" opacity=".55">
-      <path d="M${lx - r * 1.1},${y + r * 1.5} Q${lx},${y + r * 2.2} ${lx + r * 1.1},${y + r * 1.5}"/>
-      <path d="M${rx - r * 1.1},${y + r * 1.5} Q${rx},${y + r * 2.2} ${rx + r * 1.1},${y + r * 1.5}"/></g>`;
-  }
+  if (open && (mood === 'happy' || mood === 'cheer')) return eyes('calm', lx, rx, y, r, color);
   if (mood === 'happy' || mood === 'cheer') {
     return `<g fill="none" stroke="${color}" stroke-width="${Math.max(2.2, r * 0.7)}" stroke-linecap="round">
       <path d="M${lx - r},${y + 1} Q${lx},${y - r - 1.5} ${lx + r},${y + 1}"/>
@@ -120,55 +116,59 @@ const DEERSTALKER = `<g class="m-hat"><path d="M40,30 Q42,4 70,2 Q98,4 100,30 Z"
   <path d="M50,28 Q52,8 70,6 M90,28 Q88,8 70,6 M44,18 H96 M42,25 H98" stroke="#92400e" stroke-width="1.6" fill="none" opacity=".7"/>
   <ellipse cx="70" cy="30" rx="36" ry="6" fill="#92400e"/><circle cx="70" cy="3" r="3.5" fill="#78350f"/></g>`;
 
+// Медок лежит: по ширине как Пуся, по высоте примерно вдвое ниже. Общий viewBox с запасом сверху под шляпу.
+const MEDOK_VB = '0 -12 140 102';
+const medokH = (size) => (size * 102) / 140;
+
 export function medokSVG(mood = 'happy', size = 120, style = 'plush') {
   if (style === 'toon') return medokToon(mood, size);
   const det = style === 'detective';
   const id = 'mk' + ++seq;
   const blush = mood === 'happy' || mood === 'cheer';
-  return `<svg class="mascot medok mood-${mood}" width="${size}" height="${size * 120 / 140}" viewBox="0 0 140 120" role="img" aria-label="Ёж Медок">
+  return `<svg class="mascot medok mood-${mood}" width="${size}" height="${medokH(size)}" viewBox="${MEDOK_VB}" role="img" aria-label="Ёж Медок">
   <defs>
     <radialGradient id="${id}b" cx="50%" cy="30%" r="75%"><stop offset="0" stop-color="#6b6a52"/><stop offset=".55" stop-color="#46443a"/><stop offset="1" stop-color="#2c2a24"/></radialGradient>
     <radialGradient id="${id}n" cx="35%" cy="30%" r="65%"><stop offset="0" stop-color="#4b4b4b"/><stop offset=".5" stop-color="#111"/><stop offset="1" stop-color="#000"/></radialGradient>
     <radialGradient id="${id}f" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#dcc6a6"/><stop offset="1" stop-color="#c4ab88"/></radialGradient>
   </defs>
-  <ellipse cx="70" cy="113" rx="42" ry="5.5" fill="rgba(0,0,0,.13)"/>
+  <ellipse cx="70" cy="84" rx="48" ry="5" fill="rgba(0,0,0,.13)"/>
   ${sparkles(mood === 'cheer')}
   <g class="m-body">
-    <path d="${fuzz(70, 60, 45, 52, 34, 0.07, 3, 0.2)}" fill="url(#${id}b)"/>
-    ${medokFur(70, 58, 38, 46)}
-    <path d="M110,90 l7,4 l-3,6 l-6,-3z" fill="#1c1917"/>
-    <path d="${fuzz(70, 84, 26, 22, 22, 0.06, 11)}" fill="url(#${id}f)"/>
-    ${curls(70, 84, 24, 20, 30, 5)}
-    ${blush ? '<ellipse cx="54" cy="93" rx="4.5" ry="2.6" fill="#f4a3a3" opacity=".7"/><ellipse cx="86" cy="93" rx="4.5" ry="2.6" fill="#f4a3a3" opacity=".7"/>' : ''}
-    ${eyes(mood, 58, 82, 81, 3.4)}
-    <ellipse cx="70" cy="86" rx="9" ry="8" fill="url(#${id}n)"/>
-    <ellipse cx="66.7" cy="82.8" rx="3" ry="2" fill="#fff" opacity=".85"/>
-    ${mouth(mood, 70, 99, 5, '#7a6248', 1.8)}
+    <path d="${fuzz(70, 48, 50, 34, 34, 0.08, 3, 0.12)}" fill="url(#${id}b)"/>
+    ${medokFur(70, 44, 44, 28)}
+    <path d="M114,60 l7,4 l-3,6 l-6,-3z" fill="#1c1917"/>
+    <path d="${fuzz(70, 62, 22, 18, 20, 0.06, 11)}" fill="url(#${id}f)"/>
+    ${curls(70, 62, 20, 15, 24, 5)}
+    ${blush ? '<ellipse cx="55" cy="69" rx="4" ry="2.3" fill="#f4a3a3" opacity=".7"/><ellipse cx="85" cy="69" rx="4" ry="2.3" fill="#f4a3a3" opacity=".7"/>' : ''}
+    ${eyes(mood, 61, 79, 58, 3, '#111', true)}
+    <ellipse cx="70" cy="64" rx="7.5" ry="6.5" fill="url(#${id}n)"/>
+    <ellipse cx="67.4" cy="61.6" rx="2.6" ry="1.6" fill="#fff" opacity=".85"/>
+    ${mouth(mood, 70, 74, 4.5, '#7a6248', 1.6)}
   </g>
-  ${det ? DEERSTALKER : ''}
-  ${mood === 'think' ? MAGNIFIER(118, 40) : det ? MAGNIFIER(122, 80, 0.85) : ''}
+  ${det ? `<g transform="translate(0 -14)">${DEERSTALKER}</g>` : ''}
+  ${mood === 'think' ? MAGNIFIER(122, 22) : det ? MAGNIFIER(124, 62, 0.8) : ''}
 </svg>`;
 }
 
 function medokToon(mood, size) {
   const ink = '#3b3127';
-  return `<svg class="mascot medok mood-${mood}" width="${size}" height="${size * 120 / 140}" viewBox="0 0 140 120" role="img" aria-label="Ёж Медок">
-  <ellipse cx="70" cy="113" rx="42" ry="5.5" fill="rgba(0,0,0,.13)"/>
+  return `<svg class="mascot medok mood-${mood}" width="${size}" height="${medokH(size)}" viewBox="${MEDOK_VB}" role="img" aria-label="Ёж Медок">
+  <ellipse cx="70" cy="85" rx="46" ry="5" fill="rgba(0,0,0,.13)"/>
   ${sparkles(mood === 'cheer')}
   <g class="m-body" stroke-linejoin="round">
-    <polygon points="${toonSpikes(70, 62, 41, 50, 12, 0.17)}" fill="#6f6250" stroke="${ink}" stroke-width="2.5"/>
-    <ellipse cx="70" cy="60" rx="32" ry="40" fill="#8a7b63"/>
-    <path d="M48,46 q6,-8 12,0 M64,34 q6,-8 12,0 M80,44 q6,-8 12,0" stroke="#a89878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <ellipse cx="52" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
-    <ellipse cx="88" cy="108" rx="10" ry="6" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
-    <ellipse cx="70" cy="84" rx="28" ry="24" fill="#f0dcbf" stroke="${ink}" stroke-width="2.5"/>
-    <ellipse cx="51" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/><ellipse cx="89" cy="92" rx="6" ry="3.6" fill="#fb9fb1" opacity=".8"/>
-    ${eyes(mood, 56, 84, 77, 5.2, '#1c1410')}
-    <ellipse cx="70" cy="87" rx="8.5" ry="6.5" fill="#111" stroke="${ink}" stroke-width="1"/>
-    <ellipse cx="67" cy="85" rx="3" ry="1.8" fill="#fff"/>
-    ${mouth(mood, 70, 97, 6, ink, 2.4)}
+    <polygon points="${toonSpikes(70, 52, 48, 32, 13, 0.22)}" fill="#6f6250" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="70" cy="50" rx="40" ry="22" fill="#8a7b63"/>
+    <path d="M44,44 q6,-7 12,0 M64,36 q6,-7 12,0 M84,44 q6,-7 12,0" stroke="#a89878" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="54" cy="82" rx="9" ry="5" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
+    <ellipse cx="86" cy="82" rx="9" ry="5" fill="#f0dcbf" stroke="${ink}" stroke-width="2.2"/>
+    <ellipse cx="70" cy="63" rx="24" ry="18" fill="#f0dcbf" stroke="${ink}" stroke-width="2.5"/>
+    <ellipse cx="53" cy="69" rx="5" ry="3" fill="#fb9fb1" opacity=".8"/><ellipse cx="87" cy="69" rx="5" ry="3" fill="#fb9fb1" opacity=".8"/>
+    ${eyes(mood, 59, 81, 58, 4.4, '#1c1410')}
+    <ellipse cx="70" cy="65" rx="7" ry="5.5" fill="#111" stroke="${ink}" stroke-width="1"/>
+    <ellipse cx="67.5" cy="63.2" rx="2.4" ry="1.5" fill="#fff"/>
+    ${mouth(mood, 70, 74, 5, ink, 2.2)}
   </g>
-  ${mood === 'think' ? MAGNIFIER(118, 40) : ''}
+  ${mood === 'think' ? MAGNIFIER(122, 22) : ''}
 </svg>`;
 }
 
@@ -187,50 +187,67 @@ function toonSpikes(cx, cy, rx, ry, n, depth) {
 const NEWSBOY = `<g class="m-hat"><path d="M38,30 Q40,6 70,6 Q100,6 102,30 Q70,22 38,30Z" fill="#475569" stroke="#1e293b" stroke-width="2"/>
   <path d="M48,26 Q50,10 70,9 M92,26 Q90,10 70,9 M42,20 Q70,14 98,20" stroke="#94a3b8" stroke-width="1.4" fill="none" opacity=".8"/>
   <path d="M60,28 Q74,24 96,30 Q86,36 62,32Z" fill="#334155"/><circle cx="70" cy="8" r="3" fill="#1e293b"/></g>`;
-const BOWTIE = '<g><path d="M70,84 L58,78 L58,90Z M70,84 L82,78 L82,90Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.2"/><circle cx="70" cy="84" r="3" fill="#b91c1c"/></g>';
+const BOWTIE = '<g><path d="M70,87 L59,82 L59,92Z M70,87 L81,82 L81,92Z" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.2"/><circle cx="70" cy="87" r="2.8" fill="#b91c1c"/></g>';
 const NOTEBOOK = (x, y) => `<g transform="translate(${x} ${y}) rotate(-12)"><rect x="-9" y="-12" width="18" height="24" rx="2" fill="#fde68a" stroke="#92400e" stroke-width="1.5"/><path d="M-5,-6 H5 M-5,-1 H5 M-5,4 H3" stroke="#92400e" stroke-width="1.2"/></g>`;
+
+// Вышитая улыбка Пуси: широкая тонкая дуга через всю мордочку
+function pusyaMouth(mood) {
+  const c = '#4d4d4d';
+  switch (mood) {
+    case 'cheer':
+      return `<path d="M48,67 Q70,88 92,67 Q70,73 48,67Z" fill="#6b1d1d" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><ellipse cx="70" cy="77" rx="8" ry="3" fill="#f87171"/>`;
+    case 'wow':
+      return '<ellipse cx="70" cy="72" rx="4.5" ry="5.5" fill="#6b1d1d"/>';
+    case 'think':
+      return `<path d="M54,71 Q68,75 86,68" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`;
+    case 'calm':
+      return `<path d="M50,69 Q70,77 90,69" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`;
+    default:
+      return `<path d="M47,67 Q70,81 93,67" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+}
 
 export function pusyaSVG(mood = 'happy', size = 120, style = 'plush') {
   if (style === 'toon') return pusyaToon(mood, size);
   const det = style === 'detective';
-  const blush = mood === 'happy' || mood === 'cheer';
   const up = mood === 'cheer';
   const think = mood === 'think';
-  const brown = '#94562b';
-  const brownD = '#7a4522';
-  const mask = '#d3c8b6';
-  const maskD = '#bcae99';
-  const armL = up ? 'M54,94 Q38,74 30,54' : think ? 'M54,94 Q40,98 56,74' : 'M54,94 Q38,104 34,128';
+  const brown = '#8d5228';
+  const brownD = '#6f3f1e';
+  const cream = '#eee6d8';
+  const creamD = '#d6cbb8';
+  const armL = up ? 'M54,94 Q38,74 30,54' : think ? 'M54,94 Q40,98 56,76' : 'M54,94 Q38,104 34,128';
   const armR = up ? 'M86,94 Q102,74 110,54' : 'M86,94 Q102,104 106,128';
-  const pawL = up ? [29, 50, -20] : think ? [58, 70, 30] : [33, 132, 10];
+  const pawL = up ? [29, 50, -20] : think ? [58, 74, 30] : [33, 132, 10];
   const pawR = up ? [111, 50, 20] : [107, 132, -10];
   return `<svg class="mascot pusya mood-${mood}" width="${size}" height="${size * 160 / 140}" viewBox="0 0 140 160" role="img" aria-label="Обезьянка Пуся">
   <ellipse cx="70" cy="154" rx="46" ry="5.5" fill="rgba(0,0,0,.12)"/>
   ${sparkles(up)}
   <g class="m-body">
+    <path d="M84,124 Q118,134 124,114" fill="none" stroke="${brown}" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="124" cy="113" r="4.5" fill="${cream}"/>
     <path d="M62,124 Q56,136 50,146" stroke="${brown}" stroke-width="10" stroke-linecap="round" fill="none"/>
     <path d="M78,124 Q84,136 92,146" stroke="${brown}" stroke-width="10" stroke-linecap="round" fill="none"/>
-    <ellipse cx="46" cy="148" rx="11" ry="8" transform="rotate(-18 46 148)" fill="${mask}" stroke="${maskD}"/>
-    <ellipse cx="96" cy="148" rx="11" ry="8" transform="rotate(18 96 148)" fill="${mask}" stroke="${maskD}"/>
-    <path d="M70,82 C54,82 48,98 49,112 C50,124 58,130 70,130 C82,130 90,124 91,112 C92,98 86,82 70,82Z" fill="${brown}"/>
-    <path d="M60,98 Q70,94 80,98" stroke="${brownD}" stroke-width="1.2" fill="none" opacity=".5"/>
+    <ellipse cx="46" cy="148" rx="11" ry="8" transform="rotate(-18 46 148)" fill="${cream}" stroke="${creamD}"/>
+    <ellipse cx="96" cy="148" rx="11" ry="8" transform="rotate(18 96 148)" fill="${cream}" stroke="${creamD}"/>
+    <path d="M70,80 C54,80 48,98 49,112 C50,124 58,130 70,130 C82,130 90,124 91,112 C92,98 86,80 70,80Z" fill="${brown}"/>
     <path d="M89,110 l5,-1 l-1,10 l-4,0z" fill="#1c1917"/>
     <path class="m-arm-l" d="${armL}" fill="none" stroke="${brown}" stroke-width="8.5" stroke-linecap="round"/>
     <path class="m-arm-r" d="${armR}" fill="none" stroke="${brown}" stroke-width="8.5" stroke-linecap="round"/>
-    <ellipse cx="${pawL[0]}" cy="${pawL[1]}" rx="6.5" ry="8.5" transform="rotate(${pawL[2]} ${pawL[0]} ${pawL[1]})" fill="${mask}" stroke="${maskD}"/>
-    <ellipse cx="${pawR[0]}" cy="${pawR[1]}" rx="6.5" ry="8.5" transform="rotate(${pawR[2]} ${pawR[0]} ${pawR[1]})" fill="${mask}" stroke="${maskD}"/>
-    <circle cx="35" cy="50" r="10.5" fill="${mask}" stroke="${maskD}"/><circle cx="36.5" cy="50" r="5.5" fill="${maskD}" opacity=".6"/>
-    <circle cx="105" cy="50" r="10.5" fill="${mask}" stroke="${maskD}"/><circle cx="103.5" cy="50" r="5.5" fill="${maskD}" opacity=".6"/>
-    <ellipse cx="70" cy="46" rx="34" ry="35" fill="${brown}"/>
-    <path d="M58,16 Q70,12 82,16" stroke="${brownD}" stroke-width="1.5" fill="none" opacity=".5"/>
-    <path d="M70,34 C65,23 47,22 45,37 C44,47 51,53 60,53 L80,53 C89,53 96,47 95,37 C93,22 75,23 70,34Z" fill="${mask}"/>
-    <ellipse cx="70" cy="65" rx="25" ry="17" fill="${mask}"/>
-    ${think ? `<path d="M77,29 Q84,25 91,29" fill="none" stroke="${brownD}" stroke-width="2.2" stroke-linecap="round"/>` : ''}
-    ${eyes(mood, 58, 82, 40, 3.6, '#1a1410', true)}
-    ${blush ? '<ellipse cx="49" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/><ellipse cx="91" cy="62" rx="5" ry="3" fill="#f4a3a3" opacity=".7"/>' : ''}
-    <path d="M66,56 l-1.5,4 M74,56 l1.5,4" stroke="#2b2b2b" stroke-width="1.8" stroke-linecap="round"/>
-    ${mouth(mood, 70, 67, 16, '#4a4a4a', 1.8)}
-    ${det ? BOWTIE + NEWSBOY : ''}
+    <ellipse cx="${pawL[0]}" cy="${pawL[1]}" rx="6.5" ry="8.5" transform="rotate(${pawL[2]} ${pawL[0]} ${pawL[1]})" fill="${cream}" stroke="${creamD}"/>
+    <ellipse cx="${pawR[0]}" cy="${pawR[1]}" rx="6.5" ry="8.5" transform="rotate(${pawR[2]} ${pawR[0]} ${pawR[1]})" fill="${cream}" stroke="${creamD}"/>
+    <ellipse cx="36" cy="44" rx="8" ry="10" transform="rotate(-15 36 44)" fill="${cream}" stroke="${creamD}"/>
+    <ellipse cx="104" cy="44" rx="8" ry="10" transform="rotate(15 104 44)" fill="${cream}" stroke="${creamD}"/>
+    <circle cx="70" cy="46" r="33" fill="${brown}"/>
+    <path d="M60,16 Q70,13 80,16" stroke="${brownD}" stroke-width="1.4" fill="none" opacity=".45"/>
+    <path d="M70,33 C66,23 54,19 46,25 C38,31 38,44 42,52 Q70,60 98,52 C102,44 102,31 94,25 C86,19 74,23 70,33Z" fill="${cream}"/>
+    <ellipse cx="70" cy="64" rx="29" ry="19" fill="${cream}"/>
+    <path d="M46,51 Q70,45 94,51" stroke="${creamD}" stroke-width="1.4" fill="none" opacity=".8"/>
+    ${think ? `<path d="M77,31 Q83,28 89,31" fill="none" stroke="${brownD}" stroke-width="2" stroke-linecap="round"/>` : ''}
+    ${eyes(mood, 58, 82, 40, 3.5, '#141414', true)}
+    <path d="M66,58 l-0.8,2.8 M74,58 l0.8,2.8" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+    ${pusyaMouth(mood)}
+    ${det ? BOWTIE + `<g transform="translate(0 -8)">${NEWSBOY}</g>` : ''}
     ${det && !up ? NOTEBOOK(pawR[0] + 4, pawR[1] - 10) : ''}
   </g>
   ${think ? '<g class="m-prop" fill="#7c3aed" font-family="system-ui,sans-serif" font-weight="800"><text x="106" y="22" font-size="20">?</text></g>' : ''}

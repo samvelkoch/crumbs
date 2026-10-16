@@ -1,13 +1,13 @@
 // Запуск: node --test tests/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dayKey, fromZoned, toInputValue, fromInputValue, addDays, HOUR } from '../app/js/dates.js';
-import { parseFreeText } from '../app/js/foods.js';
-import { analyze, evaluateCase } from '../app/js/radar.js';
-import { merge, emptyState } from '../app/js/store.js';
-import { encryptState, decryptBackup, BackupError } from '../app/js/backup.js';
-import { stars, plateOf } from '../app/js/game.js';
-import { demoEntries } from '../app/js/demo.js';
+import { dayKey, fromZoned, toInputValue, fromInputValue, addDays, HOUR } from '../js/dates.js';
+import { parseFreeText } from '../js/foods.js';
+import { analyze, evaluateCase } from '../js/radar.js';
+import { merge, emptyState } from '../js/store.js';
+import { encryptState, decryptBackup, BackupError } from '../js/backup.js';
+import { stars, plateOf } from '../js/game.js';
+import { demoEntries } from '../js/demo.js';
 
 test('день считается в Europe/Budapest, а не в UTC', () => {
   // 23:30 UTC 15 октября = 01:30 16 октября в Будапеште (летнее время, UTC+2)
