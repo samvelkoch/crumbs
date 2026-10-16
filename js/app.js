@@ -13,11 +13,13 @@ import { encryptState, decryptBackup, BackupError } from './backup.js';
 import { medokSVG as medokBase, pusyaSVG as pusyaBase, STYLES } from './mascots.js';
 import { contextTip, CHEERS, pick } from './tips.js';
 import { WISDOM, WISDOM_CATS } from './wisdom.js';
-import { playCatch } from './games.js';
+import { playCatch, playSort } from './games.js';
+import { VALUE_CARDS } from './values.js';
+import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.js';
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -525,6 +527,17 @@ function renderGames() {
     <p class="small muted">Вдвоём: экран делится пополам, ${esc(me)} играет за Пусю слева, второй игрок за Медка справа.</p>
   </section>
   <section class="card game-card">
+    <div class="gc-top"><span class="gc-ico">🃏</span><div><h2>Что для меня важно</h2>
+      <p class="small muted">Пуся показывает карточки: семья, друзья, приключения, быть лучшей и много другого. Раскладываешь их по колодам, как чувствуешь. Правильных ответов нет.</p></div></div>
+    ${state.sorts.length ? `<p class="small muted">Разложено ${state.sorts.length} ${plural(state.sorts.length, 'раз', 'раза', 'раз')}, последний раз ${shortDay(dayKey(state.sorts[state.sorts.length - 1].ts))}</p>` : ''}
+    <div class="gc-btns">
+      ${state.sortDraft ? `<button type="button" class="pill-btn" data-action="game-sort">▶ Продолжить (${Object.keys(state.sortDraft.decks).length} из ${VALUE_CARDS.length})</button>
+        <button type="button" class="pill-btn ghost" data-action="game-sort" data-fresh="1">Начать заново</button>`
+        : `<button type="button" class="pill-btn" data-action="game-sort">🃏 Разложить карточки</button>`}
+    </div>
+    <p class="small muted">${VALUE_CARDS.length} карточек. Можно остановиться в любой момент и продолжить потом.</p>
+  </section>
+  <section class="card game-card">
     <div class="gc-top"><span class="gc-ico">🧺</span><div><h2>Лавка и кухня</h2>
       <p class="small muted">Скоро: собираем продукты на прилавках по рецепту и готовим блюдо для кого-то из близких.</p></div></div>
   </section>`;
@@ -539,6 +552,80 @@ function startCatch(mode) {
     onFinish: (r) => {
       state.games.push({ id: uid(), ts: Date.now(), ...r });
       commit();
+    },
+  });
+}
+
+function startSort(fresh) {
+  if (fresh) state.sortDraft = null;
+  playSort({
+    cards: VALUE_CARDS,
+    hero: heroFor,
+    draft: state.sortDraft,
+    onSave: (d) => { state.sortDraft = Object.keys(d.decks).length ? d : null; commit(); },
+    onFinish: (decks) => {
+      const ts = Date.now();
+      state.sorts.push({ id: uid(), ts, decks });
+      state.sortDraft = null;
+      state.games.push({ id: uid(), ts, g: 'values', mode: 'solo', scores: [], of: 0 });
+      commit();
+    },
+  });
+}
+
+// Для взрослых: расклад ценностей, что поменялось, полюса Шварца и текст для Claude
+function valuesSheet() {
+  const byId = new Map(VALUE_CARDS.map((c) => [c.id, c]));
+  const sorts = state.sorts;
+  if (!sorts.length) {
+    openSheet({
+      title: 'Что для неё важно',
+      body: '<div class="empty">Расклада пока нет. Он появится, когда ребёнок разложит карточки в игре «Что для меня важно» во вкладке «Игры».</div>',
+      foot: '<button type="button" class="pill-btn" data-sa="close">Понятно</button>',
+      actions: { close: () => closeSheet() },
+    });
+    return;
+  }
+  const cur = sorts[sorts.length - 1];
+  const chips = (ids) => ids.map((id) => byId.get(id)).filter(Boolean).map((c) => `<span class="chip small" title="${esc(c.d)}">${c.e} ${esc(c.n)}</span>`).join('');
+  const decksHTML = DECKS.map((d) => {
+    const ids = Object.keys(cur.decks).filter((id) => cur.decks[id] === d.id);
+    return `<div class="cat-title">${d.emoji} ${d.label} · ${ids.length}</div><div class="chips">${chips(ids) || '<span class="small muted">пусто</span>'}</div>`;
+  }).join('');
+  let diffHTML = '';
+  if (sorts.length > 1) {
+    const prev = sorts[sorts.length - 2];
+    const { up, down } = sortDiff(prev.decks, cur.decks);
+    diffHTML = `<div class="cat-title">🔄 С прошлого раза (${shortDay(dayKey(prev.ts))})</div>
+      ${up.length ? `<div class="small"><b>Стало важнее:</b></div><div class="chips">${chips(up)}</div>` : ''}
+      ${down.length ? `<div class="small"><b>Стало менее важно:</b></div><div class="chips">${chips(down)}</div>` : ''}
+      ${!up.length && !down.length ? '<p class="small muted">Расклад почти не изменился.</p>' : ''}`;
+  }
+  const pi = poleIndices(cur.decks, VALUE_CARDS);
+  const polesHTML = pi ? `<div class="cat-title">🧭 Четыре стороны (модель Шварца)</div>
+    <div class="poles">${Object.entries(POLES).map(([k, p]) => {
+      const v = Math.abs(pi[k].index) < 0.005 ? 0 : pi[k].index;
+      const w = Math.min(50, Math.abs(v) * 50);
+      return `<div class="pole"><div class="pl"><b>${p.label}</b><span class="small muted">${p.hint}</span></div>
+        <div class="pbar"><i class="${v >= 0 ? 'pos' : 'neg'}" style="width:${w}%;${v >= 0 ? 'left:50%' : `left:${50 - w}%`}"></i></div><span class="pv">${v > 0 ? '+' : ''}${v.toFixed(2)}</span></div>`;
+    }).join('')}</div>
+    <p class="small muted">Справа от середины: важнее среднего для неё, слева: менее важно. Это грубая оценка по одному раскладу, она не про «хорошо» или «плохо».</p>` : '';
+  openSheet({
+    title: 'Что для неё важно',
+    body: `<p class="small muted">Расклад от ${shortDay(dayKey(cur.ts))}, всего раскладов ${sorts.length}. Детские ценности только складываются и меняются, это повод заметить интересы и поговорить, а не тест и не диагноз.</p>
+      ${decksHTML}${diffHTML}${polesHTML}
+      <p class="small muted">Кнопка ниже копирует расклад и бережное задание. Его можно вставить в чат с Claude и получить идеи, о чём поговорить и что предложить. Имени ребёнка в тексте нет.</p>`,
+    foot: '<button type="button" class="pill-btn" data-sa="copy">📋 Скопировать для Claude</button>',
+    actions: {
+      copy: async () => {
+        const text = claudePrompt(sorts, VALUE_CARDS);
+        try {
+          await navigator.clipboard.writeText(text);
+          toast('Скопировано. Вставьте в чат с Claude');
+        } catch {
+          toast('Не удалось скопировать автоматически');
+        }
+      },
     },
   });
 }
@@ -577,6 +664,7 @@ function renderMore() {
     <button type="button" class="row" data-action="backup"><span class="ico">🔐</span><span class="txt"><span class="t">Сохранить копию</span><span class="d">Зашифрованный файл с паролем семьи</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="restore"><span class="ico">📥</span><span class="txt"><span class="t">Загрузить копию</span><span class="d">Перенести записи с другого телефона или планшета</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="install"><span class="ico">📲</span><span class="txt"><span class="t">Установить как приложение</span><span class="d">Иконка на экране, работает без интернета</span></span><span class="chev">›</span></button>
+    <button type="button" class="row" data-action="values-view"><span class="ico">🃏</span><span class="txt"><span class="t">Что для неё важно</span><span class="d">${state.sorts.length ? `Раскладов: ${state.sorts.length}. Карточки ценностей и что меняется` : 'Расклад карточек ценностей появится здесь'}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="choices-view"><span class="ico">🧭</span><span class="txt"><span class="t">Выборы и ценности</span><span class="d">${Object.keys(state.choices).length ? `Ответов: ${Object.keys(state.choices).length}. Как ребёнок отвечает на вопросы героев` : 'Ответы на вопросы героев появятся здесь'}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="reactions"><span class="ico">💬</span><span class="txt"><span class="t">Реакции на советы</span><span class="d">${Object.keys(state.reactions).length ? `Оценено ${Object.keys(state.reactions).length}: какие советы нравятся, а какие нет` : 'Пока оценок нет'}</span></span><span class="chev">›</span></button>
     <button type="button" class="row" data-action="privacy"><span class="ico">🔒</span><span class="txt"><span class="t">Где хранятся данные</span><span class="d">Только на этом устройстве</span></span><span class="chev">›</span></button>
@@ -1176,6 +1264,8 @@ const ACTIONS = {
     commit();
   },
   'choices-view': () => choicesSheet(),
+  'values-view': () => valuesSheet(),
+  'game-sort': (b) => startSort(!!b.dataset.fresh),
   rate: (b) => {
     const id = b.dataset.id;
     const r = +b.dataset.r;

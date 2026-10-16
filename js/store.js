@@ -17,6 +17,8 @@ export function emptyState() {
     reactions: {}, // id совета -> { r: -1 | 0 | 1, t: когда оценили }
     games: [], // сыгранные мини-игры: { id, ts, g, mode, scores, of }
     choices: {}, // id вопроса-выбора -> { a: индекс ответа, t }
+    sorts: [], // расклады «Что для меня важно»: { id, ts, decks: { cardId: 'v'|'i'|'n'|'u' } }
+    sortDraft: null, // незаконченный расклад: { order, decks }
   };
 }
 
@@ -67,6 +69,8 @@ function normalize(s) {
     reactions: s.reactions && typeof s.reactions === 'object' ? s.reactions : {},
     games: Array.isArray(s.games) ? s.games : [],
     choices: s.choices && typeof s.choices === 'object' ? s.choices : {},
+    sorts: Array.isArray(s.sorts) ? s.sorts.filter((x) => x && x.id && x.decks) : [],
+    sortDraft: s.sortDraft && s.sortDraft.decks ? s.sortDraft : null,
   };
 }
 
@@ -160,6 +164,8 @@ export function merge(local, incoming) {
     wisdom: [...new Set([...(a.wisdom || []), ...(b.wisdom || [])])],
     reactions: mergeReactions(a.reactions, b.reactions),
     choices: mergeReactions(a.choices, b.choices),
+    sorts: [...new Map([...(b.sorts || []), ...(a.sorts || [])].map((x) => [x.id, x])).values()].sort((x, y) => x.ts - y.ts),
+    sortDraft: a.sortDraft || b.sortDraft || null,
     games: [...new Map([...(b.games || []), ...(a.games || [])].map((g) => [g.id, g])).values()].sort((x, y) => x.ts - y.ts),
   };
 }

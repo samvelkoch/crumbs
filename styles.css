@@ -493,3 +493,51 @@ body.game-open { overflow: hidden; }
 .choice-row { background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 4px; }
 .choice-row .cq { font-size: .9rem; }
 .choice-row .ca { font-weight: 800; color: var(--brand); }
+
+/* «Что для меня важно» */
+.game-layer.sort { overflow-y: auto; }
+.s-wrap { flex: 1; max-width: 560px; width: 100%; margin: 0 auto; display: grid; gap: 12px; align-content: start; padding-top: 4vh; }
+.s-prog { margin: 0; }
+.s-count { text-align: center; font-variant-numeric: tabular-nums; }
+.s-stage { display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.s-hero svg { display: block; }
+.s-card { flex: 1; max-width: 340px; min-height: 220px; background: var(--card); border-radius: 26px; box-shadow: var(--shadow); padding: 22px 18px; display: grid; gap: 8px; place-content: center; text-align: center; animation: s-in .25s ease-out; }
+.s-e { font-size: 4rem; line-height: 1; }
+.s-n { font-weight: 900; font-size: 1.5rem; text-wrap: balance; }
+.s-d { color: var(--muted); font-size: 1rem; line-height: 1.35; text-wrap: balance; }
+@keyframes s-in { from { transform: translateY(16px) scale(.96); opacity: 0; } }
+.s-card.fly-v { transition: transform .26s ease-in, opacity .26s; transform: translate(-60%, 60%) rotate(-12deg) scale(.4); opacity: 0; }
+.s-card.fly-i { transition: transform .26s ease-in, opacity .26s; transform: translate(-20%, 70%) rotate(-4deg) scale(.4); opacity: 0; }
+.s-card.fly-n { transition: transform .26s ease-in, opacity .26s; transform: translate(20%, 70%) rotate(4deg) scale(.4); opacity: 0; }
+.s-card.fly-u { transition: transform .26s ease-in, opacity .26s; transform: translate(60%, 60%) rotate(12deg) scale(.4); opacity: 0; }
+.s-say { min-height: 1.3em; text-align: center; font-weight: 800; color: var(--brand); }
+.s-decks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.s-deck { min-height: 76px; border-radius: 18px; display: grid; place-items: center; gap: 2px; font-weight: 800; font-size: .85rem; line-height: 1.15; padding: 6px 4px; background: var(--card); border: 2px solid var(--line); box-shadow: 0 3px 0 rgba(0, 0, 0, .08); }
+.s-deck span { font-size: 1.7rem; }
+.s-deck:active { transform: translateY(2px); }
+.s-deck.d-v { border-color: #fda4af; background: #fff1f2; }
+.s-deck.d-i { border-color: #93c5fd; background: #eff6ff; }
+.s-deck.d-n { border-color: #e5e7eb; }
+.s-deck.d-u { border-color: #fde68a; background: #fffbeb; }
+.s-deck[aria-pressed="true"] { outline: 3px solid var(--brand); }
+.s-foot { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.s-review { max-width: 760px; width: 100%; margin: 0 auto; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.s-col { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px; border-top: 5px solid #e5e7eb; }
+.s-col.d-v { border-top-color: #fb7185; }
+.s-col.d-i { border-top-color: #60a5fa; }
+.s-col.d-u { border-top-color: #fbbf24; }
+.s-col h3 { margin: 0 0 8px; font-size: 1rem; display: flex; gap: 6px; }
+.s-col h3 span { color: var(--muted); }
+.s-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.s-chip { padding: 6px 10px; border-radius: 999px; background: var(--bg); font-weight: 700; font-size: .85rem; }
+.s-move { position: fixed; inset: 0; background: rgba(30, 20, 50, .45); display: grid; place-items: center; padding: 16px; z-index: 5; }
+.s-move-in { background: var(--card); border-radius: 24px; padding: 18px; max-width: 420px; width: 100%; display: grid; gap: 8px; text-align: center; }
+.poles { display: grid; gap: 10px; margin-bottom: 6px; }
+.pole { display: grid; grid-template-columns: 1fr 110px 44px; gap: 8px; align-items: center; }
+.pole .pl { display: grid; }
+.pbar { position: relative; height: 10px; border-radius: 6px; background: var(--bg); }
+.pbar::before { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--line); }
+.pbar i { position: absolute; top: 0; bottom: 0; border-radius: 6px; }
+.pbar i.pos { background: var(--brand); }
+.pbar i.neg { background: #fdba74; }
+.pv { font-variant-numeric: tabular-nums; font-size: .85rem; text-align: right; }
