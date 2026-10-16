@@ -265,3 +265,53 @@ export function itemEmoji(key) {
   if (key.startsWith('f:')) return FACTOR_BY_ID[key.slice(2)]?.emoji || '🔎';
   return foodEmoji(key);
 }
+
+// ---------------------------------------------------------------- количество (необязательно)
+// Бытовые величины: «3 яблока» это { n: 3, u: 'pc' }, «немного» это { s: 'little' }.
+export const QTY_UNITS = [
+  { id: 'pc', e: '🔢', f: ['штука', 'штуки', 'штук'] },
+  { id: 'slice', e: '🍊', f: ['долька', 'дольки', 'долек'] },
+  { id: 'piece', e: '🍫', f: ['кусочек', 'кусочка', 'кусочков'] },
+  { id: 'spoon', e: '🥄', f: ['ложка', 'ложки', 'ложек'] },
+  { id: 'handful', e: '🤲', f: ['горсть', 'горсти', 'горстей'] },
+  { id: 'plate', e: '🍽️', f: ['тарелка', 'тарелки', 'тарелок'] },
+  { id: 'glass', e: '🥛', f: ['стакан', 'стакана', 'стаканов'] },
+  { id: 'cup', e: '☕', f: ['чашка', 'чашки', 'чашек'] },
+  { id: 'pack', e: '🛍️', f: ['пакетик', 'пакетика', 'пакетиков'] },
+  { id: 'bottle', e: '🍼', f: ['бутылка', 'бутылки', 'бутылок'] },
+  { id: 'can', e: '🥫', f: ['банка', 'банки', 'банок'] },
+  { id: 'bucket', e: '🪣', f: ['ведро', 'ведра', 'вёдер'] },
+];
+export const QTY_SIZES = [{ id: 'little', label: 'немного' }, { id: 'half', label: 'половинка' }, { id: 'lot', label: 'много' }];
+export const QTY_NUMS = [1, 2, 3, 4, 5, 6, 8, 10];
+export const DRINK_UNITS = ['glass', 'cup', 'bottle', 'can', 'pack'];
+const UNIT_BY_ID = Object.fromEntries(QTY_UNITS.map((u) => [u.id, u]));
+
+const plural = (n, f) => (n % 10 === 1 && n % 100 !== 11 ? f[0] : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? f[1] : f[2]);
+
+export function qtyText(q) {
+  if (!q) return '';
+  if (q.s) return QTY_SIZES.find((x) => x.id === q.s)?.label || '';
+  const u = UNIT_BY_ID[q.u];
+  if (!q.n || !u) return '';
+  return `${q.n} ${plural(q.n, u.f)}`;
+}
+
+export function defaultUnit(id) {
+  const s = foodSector(id);
+  if (s === 'drink') return 'glass';
+  if (s === 'fruit' || s === 'veg' || s === 'treat') return 'pc';
+  return s ? 'plate' : 'pc';
+}
+
+// Только корректные значения: из старых записей и копий ничего лишнего не попадёт
+export function cleanQty(qty, foods) {
+  const out = {};
+  for (const id of foods || []) {
+    const q = qty?.[id];
+    if (!q) continue;
+    if (q.s && QTY_SIZES.some((x) => x.id === q.s)) out[id] = { s: q.s };
+    else if (Number.isInteger(q.n) && q.n > 0 && q.n <= 99 && UNIT_BY_ID[q.u]) out[id] = { n: q.n, u: q.u };
+  }
+  return Object.keys(out).length ? out : undefined;
+}

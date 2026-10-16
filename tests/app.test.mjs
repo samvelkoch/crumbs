@@ -207,3 +207,38 @@ test('robot missions are solvable and simulation matches the solver', async () =
   const r = simulate(parseMission(m7), m7, { move: 'wheels', tool: 'claw' }, [{ c: 'M', d: 'E', n: 1 }]);
   assert.equal(r.fail, 'mud');
 });
+
+test('шифровки: каждая записка шифруется и расшифровывается всеми тремя шифрами', async () => {
+  const { MESSAGES, CIPHER_LEVELS, encode, decodeSym, isLetter, clean } = await import('../js/cipher.js');
+  assert.ok(MESSAGES.length >= 40);
+  for (const [, text] of MESSAGES) {
+    assert.ok([...clean(text)].every((ch) => ch === ' ' || isLetter(ch)), text);
+    assert.doesNotMatch(text, /БАБУШ|ДЕДУШ|БРАТ|СЕСТР/);
+    for (const l of CIPHER_LEVELS) {
+      const e = encode(text, l.key);
+      assert.ok(e.cells.every((c) => c.sep || decodeSym(c.sym, l.key, e) === c.ch), `${l.key}: ${text}`);
+    }
+  }
+});
+
+test('логика сыщика: у каждой головоломки ровно одно решение', async () => {
+  const { makePuzzle, countSolutions, clueHolds, clueText } = await import('../js/logic.js');
+  for (const lv of [1, 2, 3]) {
+    for (let i = 0; i < 3; i++) {
+      const p = makePuzzle(lv, Math.random, 2);
+      assert.equal(countSolutions(p), 1);
+      assert.ok(p.clues.every((k) => clueHolds(p.answer, k)));
+      assert.ok(p.clues.every((k) => /\.$/.test(clueText(k))));
+    }
+  }
+});
+
+test('количество еды: подписи и очистка', async () => {
+  const { qtyText, cleanQty } = await import('../js/foods.js');
+  assert.equal(qtyText({ n: 3, u: 'pc' }), '3 штуки');
+  assert.equal(qtyText({ n: 1, u: 'pack' }), '1 пакетик');
+  assert.equal(qtyText({ n: 5, u: 'slice' }), '5 долек');
+  assert.equal(qtyText({ s: 'little' }), 'немного');
+  assert.deepEqual(cleanQty({ apple: { n: 2, u: 'pc' }, x: { n: 1, u: 'pc' }, choco: { n: -1, u: 'zzz' } }, ['apple', 'choco']), { apple: { n: 2, u: 'pc' } });
+  assert.equal(cleanQty({}, ['apple']), undefined);
+});

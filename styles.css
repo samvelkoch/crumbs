@@ -651,8 +651,6 @@ body.game-open { overflow: hidden; }
 .rb-cell.dark { background: #0f172a; }
 .rb-badge { position: absolute; right: 2px; top: 1px; font-size: calc(var(--cs) * .34); font-style: normal; font-weight: 900; color: #7c3aed; }
 .rb-plan { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.rb-plan.top { z-index: 3; }
-.rb-plan .sel circle { stroke: #fff; stroke-width: .04; }
 .rb-bot { position: absolute; left: 0; top: 0; width: var(--cs); height: var(--cs); display: grid; place-items: center; transform: translate(calc(var(--x) * var(--cs)), calc(var(--y) * var(--cs))); transition: transform .38s ease; pointer-events: none; z-index: 2; }
 .rb-bot svg { width: 104%; height: auto; filter: drop-shadow(0 3px 3px rgba(0,0,0,.25)); }
 .rb-bot.oops svg { animation: shake .3s 2; }
@@ -681,3 +679,70 @@ body.game-open { overflow: hidden; }
 .rb-ctrl { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .rb-run { background: var(--green); padding-inline: 22px; font-size: 1.1rem; }
 .rb-stars { font-size: 2rem; letter-spacing: 4px; }
+
+/* Количество в записи еды */
+.tray-item { display: inline-flex; gap: 2px; }
+.tray-item .chip { border-radius: 999px 0 0 999px; }
+.tray-item .x-btn { border-radius: 0 999px 999px 0; padding-inline: 10px; }
+.tray-item.open .chip:first-child { border-color: var(--brand); background: var(--brand-soft); }
+.tray .qty { font-weight: 700; color: var(--brand); }
+.tray .qty.none { font-weight: 500; color: var(--muted); }
+.tray-hint { padding: 6px 4px 0; }
+.qty-box { margin-top: 8px; padding: 10px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow); display: grid; gap: 8px; }
+.qty-pick { display: grid; gap: 6px; }
+.qty-nums .chip { min-width: 40px; justify-content: center; }
+.qty-foot { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Шифровки */
+.cf-from { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.cf-msg { display: flex; flex-wrap: wrap; gap: 14px 18px; justify-content: center; padding: 14px 10px; border-radius: var(--radius); background: #fff8e7; border: 2px dashed #e9c98a; }
+.cf-word { display: inline-flex; gap: 4px; }
+.cf-sep { align-self: end; font-weight: 800; }
+.cf-cell { display: grid; grid-template-rows: 30px 38px; width: 36px; border: 0; padding: 0; background: none; }
+.cf-cell i { font-style: normal; font-size: 1.25rem; display: grid; place-items: center; font-weight: 800; color: #6d28d9; }
+.cf-msg.numbers .cf-cell { width: 40px; }
+.cf-msg.numbers .cf-cell i { font-size: 1rem; }
+.cf-cell b { display: grid; place-items: center; border-radius: 10px; background: #fff; border: 2px solid #d6c3a5; font-size: 1.25rem; color: var(--ink); }
+.cf-cell.cur b { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.cf-cell.bad b { border-color: #ef4444; background: #fee2e2; }
+.cf-key { background: var(--card); border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow); }
+.cf-key p { margin: 0 0 8px; }
+.cf-keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.cf-keys span { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 10px; background: #f5f0ff; font-weight: 800; }
+.cf-keys i { font-style: normal; font-size: 1.15rem; }
+.cf-abc { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; }
+.cf-abc span { display: grid; justify-items: center; font-weight: 800; font-size: .9rem; padding: 3px 0; border-radius: 6px; background: #f5f0ff; }
+.cf-abc small { font-size: .62rem; color: #7c3aed; line-height: 1; }
+.cf-kbd { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+.cf-kbd button { min-height: 44px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); font-size: 1.1rem; font-weight: 800; color: var(--ink); }
+.cf-kbd button:active { background: var(--brand-soft); }
+.cf-kbd .wide { grid-column: span 8; }
+.cf-done { font-size: 1.3rem; font-weight: 800; margin: 0; color: #6d28d9; }
+
+/* Логика сыщика */
+.lg-clues { background: var(--card); border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow); }
+.lg-clues ol { margin: 0; padding-left: 22px; display: grid; gap: 4px; }
+.lg-clues button { border: 0; background: none; padding: 4px 0; text-align: left; font: inherit; color: var(--ink); }
+.lg-clues button.done { text-decoration: line-through; color: var(--muted); }
+.lg-grid-wrap { overflow-x: auto; }
+.lg-grid { border-collapse: collapse; margin: 0 auto; }
+.lg-grid th, .lg-grid td { padding: 0; text-align: center; }
+.lg-cat { font-size: .78rem; font-weight: 800; color: var(--muted); padding-bottom: 2px; }
+.lg-val { font-size: 1.2rem; height: 34px; }
+.lg-grid .first { border-left: 3px solid #475569; }
+.lg-who { text-align: left; padding-right: 6px; font-size: 1.3rem; white-space: nowrap; }
+.lg-who span { font-size: .8rem; font-weight: 700; margin-left: 2px; }
+.lg-cell { width: 34px; height: 34px; border: 1.5px solid #94a3b8; background: #fff; font-size: 1.1rem; font-weight: 900; padding: 0; margin: 1px; border-radius: 6px; }
+.lg-cell.x { color: #94a3b8; background: #f1f5f9; }
+.lg-cell.o { color: #fff; background: #16a34a; border-color: #16a34a; }
+.lg-cell.bad { background: #ef4444; border-color: #ef4444; }
+.lg-answer { display: grid; gap: 6px; width: 100%; }
+.lg-answer div { display: flex; justify-content: space-between; background: var(--card); padding: 8px 12px; border-radius: 12px; box-shadow: var(--shadow); font-size: 1.1rem; }
+.lg-clues ol { list-style: none; padding-left: 0; }
+.lg-clues button { display: flex; gap: 6px; align-items: baseline; }
+.lg-clues button b { min-width: 1.4em; text-align: right; }
+@media (max-width: 480px) {
+  .lg-who span { display: none; }
+  .lg-cell { width: 28px; height: 30px; margin: 1px 0; }
+  .lg-val { font-size: 1.05rem; }
+}
