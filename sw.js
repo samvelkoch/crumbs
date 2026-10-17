@@ -1,6 +1,6 @@
 // Офлайн-режим: файлы приложения кэшируются при установке.
 // Сервис-воркер обслуживает только собственные файлы сайта и не видит данных из IndexedDB.
-const VERSION = 'v2.12.0';
+const VERSION = 'v2.12.1';
 const CACHE = 'detective-' + VERSION;
 const FILES = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest',
