@@ -96,14 +96,14 @@ export function rankOf(total) {
 
 export const BADGES = [
   { id: 'first_meal', emoji: '🍽️', title: 'Первая улика', hint: 'Записать первую еду' },
-  { id: 'first_skin', emoji: '🔎', title: 'Первый замер', hint: 'Отметить, как кожа' },
+  { id: 'first_skin', emoji: '🔎', title: 'Первый осмотр', hint: 'Сделать первый осмотр' },
   { id: 'clue', emoji: '🧴', title: 'Внимательный глаз', hint: 'Записать внешнюю улику' },
   { id: 'plate1', emoji: '🌈', title: 'Супер-тарелка', hint: 'Собрать 4 клетки за день' },
   { id: 'plate5', emoji: '🏆', title: 'Мастер тарелок', hint: '5 супер-тарелок' },
   { id: 'water', emoji: '💧', title: 'Водный агент', hint: `${WATER_GOAL} стаканов за день` },
   { id: 'streak3', emoji: '🔥', title: 'Три дня подряд', hint: 'Записи 3 дня подряд' },
   { id: 'streak7', emoji: '📅', title: 'Неделя сыщика', hint: 'Записи 7 дней подряд' },
-  { id: 'skin10', emoji: '📈', title: 'Точные данные', hint: '10 замеров кожи' },
+  { id: 'skin10', emoji: '📈', title: 'Точные данные', hint: '10 осмотров' },
   { id: 'rainbow', emoji: '🥕', title: 'Радуга', hint: '8 разных овощей и фруктов за неделю' },
   { id: 'case1', emoji: '📁', title: 'Дело закрыто', hint: 'Довести дело до конца' },
 ];
