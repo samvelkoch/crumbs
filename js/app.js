@@ -25,7 +25,7 @@ import { DECKS, POLES, poleIndices, sortDiff, claudePrompt } from './valuesort.j
 import { CHOICES, CHOICE_THEMES } from './choices.js';
 import { demoEntries } from './demo.js';
 
-const VERSION = '2.12.1';
+const VERSION = '2.12.2';
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const today = () => dayKey(Date.now());
@@ -199,7 +199,7 @@ function entrySummary(e) {
   }
   if (e.type === 'skin') {
     const z = ZONES.map((x) => `${x.label} ${LEVELS[e.zones[x.id] ?? 0].toLowerCase()}`).join(', ');
-    return { ico: '🔎', title: 'Кожа ' + dotsHTML(e.zones), desc: esc([z, e.itch ? 'чесалось' : '', e.note].filter(Boolean).join(' · ')), raw: true };
+    return { ico: '🔎', title: 'Осмотр ' + dotsHTML(e.zones), desc: esc([z, e.itch ? 'чесалось' : '', e.note].filter(Boolean).join(' · ')), raw: true };
   }
   if (e.type === 'factor') {
     return { ico: FACTOR_BY_ID[e.factors[0]]?.emoji || '🧴', title: 'Улика', desc: [e.factors.map((f) => FACTOR_BY_ID[f]?.label || f).join(', '), e.note].filter(Boolean).join(' · ') };
@@ -289,7 +289,7 @@ function renderTop() {
 function renderOnboard() {
   return `<div class="onboard">
     <div class="stage">
-      <div class="bubble" style="--tail:48%"><span class="who">Медок и Пуся</span>Привет! Мы Медок и Пуся, а это наше агентство. Будем вместе записывать, что было на тарелке и как себя чувствует кожа. А Радар поможет найти, что с чем связано.</div>
+      <div class="bubble" style="--tail:48%"><span class="who">Медок и Пуся</span>Привет! Мы Медок и Пуся, а это наше агентство. Будем вместе записывать, что было на тарелке и как ты себя чувствуешь. А Радар поможет найти, что с чем связано.</div>
       <div class="mascots"><div class="mascot-btn">${medokSVG('cheer', 102)}<span class="name">Медок</span></div><div class="mascot-btn">${pusyaSVG('cheer', 120)}<span class="name">Пуся</span></div></div>
     </div>
     <div class="card" style="display:grid;gap:12px;text-align:left">
@@ -337,13 +337,13 @@ function renderToday() {
 
   <section class="quick" aria-label="Быстрые записи">
     <button type="button" class="qbtn meal" data-action="meal"><span class="ico">🍽️</span>Еда</button>
-    <button type="button" class="qbtn skin" data-action="skin"><span class="ico">🔎</span>Кожа</button>
+    <button type="button" class="qbtn skin" data-action="skin"><span class="ico">🔎</span>Осмотр</button>
     <button type="button" class="qbtn water" data-action="water-add"><span class="ico">💧</span>+ Вода</button>
     <button type="button" class="qbtn clue" data-action="factor"><span class="ico">🧴</span>Улика</button>
   </section>
 
   <section class="card">
-    <div class="card-head"><h2>Как кожа сейчас?</h2><span class="hint">${lastSkin ? `замер в ${timeStr(lastSkin.ts)} ${dotsHTML(lastSkin.zones)}` : 'сегодня замеров нет'}</span></div>
+    <div class="card-head"><h2>Как ты сейчас?</h2><span class="hint">${lastSkin ? `осмотр в ${timeStr(lastSkin.ts)} ${dotsHTML(lastSkin.zones)}` : 'сегодня осмотров нет'}</span></div>
     <div class="skin-quick">
       <button type="button" class="pill-btn green q" data-action="skin-clear">✨ Всё спокойно</button>
       <button type="button" class="pill-btn soft q" data-action="skin">Отметить подробно</button>
@@ -363,7 +363,7 @@ function renderToday() {
 
   <section class="card">
     <div class="card-head"><h2>Сегодня</h2><span class="hint">${st > 1 ? `🔥 ${st} ${plural(st, 'день', 'дня', 'дней')} подряд` : ''}</span></div>
-    <div class="timeline">${timeline.length ? timeline.map(entryRow).join('') : `<div class="empty">Пока пусто. Начнём с кнопки «Еда» или «Кожа».${state.entries.length ? '' : '<br><button type="button" class="link-btn" data-action="demo-load" style="margin-top:8px">🧪 Или посмотреть на примере</button>'}</div>`}</div>
+    <div class="timeline">${timeline.length ? timeline.map(entryRow).join('') : `<div class="empty">Пока пусто. Начнём с кнопки «Еда» или «Осмотр».${state.entries.length ? '' : '<br><button type="button" class="link-btn" data-action="demo-load" style="margin-top:8px">🧪 Или посмотреть на примере</button>'}</div>`}</div>
   </section>`;
 }
 
@@ -396,14 +396,14 @@ function renderDiary() {
       <button type="button" class="cal-nav" data-action="month" data-d="1" aria-label="Следующий месяц" ${ui.month >= t.slice(0, 7) ? 'disabled style="opacity:.3"' : ''}>›</button>
     </div>
     <div class="cal">${cells}</div>
-    <div class="legend">${LEVELS.map((l, i) => `<span><i class="dot lv${i}"></i>${l}</span>`).join('')}<span><i class="dot" style="background:#f6f1ea"></i>нет замера</span></div>
+    <div class="legend">${LEVELS.map((l, i) => `<span><i class="dot lv${i}"></i>${l}</span>`).join('')}<span><i class="dot" style="background:#f6f1ea"></i>нет осмотра</span></div>
   </section>
   <section class="card">
     <div class="card-head"><h2>${esc(humanDay(ui.day, t))}</h2><span class="hint">🍽️ ${plate.size}/4 · 💧 ${water}${sweetOf(dayAll).length ? ` · 🧋 ${sweetOf(dayAll).length}` : ''}</span></div>
     <div class="timeline">${list.length ? list.slice().reverse().map(entryRow).join('') : '<div class="empty">В этот день записей нет.</div>'}</div>
     <div class="chips" style="margin-top:12px">
       <button type="button" class="chip small" data-action="meal">＋ Еда</button>
-      <button type="button" class="chip small" data-action="skin">＋ Кожа</button>
+      <button type="button" class="chip small" data-action="skin">＋ Осмотр</button>
       <button type="button" class="chip small" data-action="factor">＋ Улика</button>
       ${ui.day !== t ? '<button type="button" class="chip small" data-action="water-add">＋ Вода</button><button type="button" class="chip small" data-action="water-add" data-drink="plain">＋ Без сахара</button><button type="button" class="chip small" data-action="sweet">＋ Сладкое</button>' : ''}
     </div>
@@ -431,13 +431,13 @@ function trendSVG(zone) {
     bars += `<rect x="${x}" y="${H - 18 - h}" width="${bw - 3}" height="${h}" rx="3" fill="var(--l${lv})"><title>${shortDay(k)}: ${LEVELS[lv]}</title></rect>`;
   }
   const lab = (i) => `<text x="${i * bw + bw / 2}" y="${H - 3}" font-size="9" text-anchor="middle" fill="#6f6680">${shortDay(addDays(t, -(N - 1 - i))).replace(/ .*/, '')}</text>`;
-  return `<svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Кожа за 30 дней">${bars}${[0, 7, 14, 21, 29].map(lab).join('')}</svg>`;
+  return `<svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="Самочувствие за 30 дней">${bars}${[0, 7, 14, 21, 29].map(lab).join('')}</svg>`;
 }
 
 function verdictText(it) {
   const pctE = Math.round((it.flaresExp / it.nExp) * 100);
   const pctU = it.nUn ? Math.round((it.flaresUn / it.nUn) * 100) : 0;
-  return `Кожа была «${LEVELS[FLARE].toLowerCase()}» или хуже в ${it.flaresExp} из ${it.nExp} замеров после него (${pctE}%) и в ${it.flaresUn} из ${it.nUn} без него (${pctU}%).`;
+  return `Осмотр показывал «${LEVELS[FLARE].toLowerCase()}» или хуже в ${it.flaresExp} из ${it.nExp} осмотров после него (${pctE}%) и в ${it.flaresUn} из ${it.nUn} без него (${pctU}%).`;
 }
 
 function suspectCard(it, items, canCase) {
@@ -468,15 +468,15 @@ function caseCard(c) {
   let body = '';
   if (c.closed || ev.done) {
     const txt = {
-      better: `Без «${name}» кожа была спокойнее: в среднем ${ev.meanDuring.toFixed(1)} против ${ev.meanBefore.toFixed(1)} до дела. Хороший повод показать отчёт врачу.`,
-      worse: `Без «${name}» кожа была даже беспокойнее (${ev.meanDuring.toFixed(1)} против ${ev.meanBefore.toFixed(1)}). Похоже, дело не в нём.`,
+      better: `Без «${name}» осмотры были спокойнее: в среднем ${ev.meanDuring.toFixed(1)} против ${ev.meanBefore.toFixed(1)} до дела. Хороший повод показать отчёт врачу.`,
+      worse: `Без «${name}» осмотры были даже беспокойнее (${ev.meanDuring.toFixed(1)} против ${ev.meanBefore.toFixed(1)}). Похоже, дело не в нём.`,
       same: `Разницы почти нет (${ev.meanDuring.toFixed(1)} против ${ev.meanBefore.toFixed(1)}). Похоже, «${name}» не главный подозреваемый.`,
-      few: 'Замеров мало для вывода. Дело можно повторить, отмечая кожу каждый день.',
+      few: 'Осмотров мало для вывода. Дело можно повторить, делая осмотр каждый день.',
     }[ev.outcome];
     body = `<p class="small">${txt}</p>${c.closed ? '' : `<button type="button" class="pill-btn" data-action="case-close" data-id="${esc(c.id)}">Закрыть дело ⭐ +50</button>`}`;
   } else {
     body = `<div class="progress" aria-label="Прогресс"><i style="width:${(ev.elapsed / c.days) * 100}%"></i></div>
-      <p class="small">День ${ev.elapsed} из ${c.days}. Замеров кожи в деле: ${ev.during}, до дела: ${ev.before}.</p>
+      <p class="small">День ${ev.elapsed} из ${c.days}. Осмотров в деле: ${ev.during}, до дела: ${ev.before}.</p>
       ${ev.slips.length ? `<div class="note">«${name}» всё-таки встречался: ${ev.slips.map(shortDay).join(', ')}. Ничего страшного, дело продолжается.</div>` : ''}`;
   }
   return `<section class="card">
@@ -495,26 +495,26 @@ function renderRadar() {
   return `
   <section class="stage" style="padding-bottom:10px">
     <div class="bubble" style="--tail:22%"><span class="who">🦔 Радар Медка</span>${
-      !a.ready ? `Мне нужно ещё ${need} ${plural(need, 'замер', 'замера', 'замеров')} кожи, перед которыми записана еда. Тогда я начну искать следы.`
-        : a.suspects.length ? 'Есть след! Смотрю, после чего кожа бывала беспокойнее, и сравниваю с днями без этого.'
+      !a.ready ? `Мне нужно ещё ${need} ${plural(need, 'осмотр', 'осмотра', 'осмотров')}, перед которыми записана еда. Тогда я начну искать следы.`
+        : a.suspects.length ? 'Есть след! Смотрю, после чего осмотры бывали беспокойнее, и сравниваю с днями без этого.'
           : a.watch.length ? 'Явного следа пока нет, но кое-что под наблюдением. Продолжаем записывать.'
             : 'Следов не видно. Это тоже хороший результат расследования.'}</div>
     <div class="mascots" style="justify-content:flex-start;gap:8px">${medokSVG(a.ready ? 'think' : 'calm', 110)}
       <div style="flex:1;align-self:center;display:grid;gap:6px"><div class="progress"><i style="width:${a.progress * 100}%"></i></div>
-      <span class="small muted">Замеров для анализа: ${a.measurements} из ${state.entries.filter((e) => e.type === 'skin').length}</span></div></div>
+      <span class="small muted">Осмотров для анализа: ${a.measurements} из ${state.entries.filter((e) => e.type === 'skin').length}</span></div></div>
   </section>
 
   <div class="zone-tabs" role="group" aria-label="Зона">
     ${[{ id: 'max', label: 'Все' }, ...ZONES].map((z) => `<button type="button" data-action="zone" data-zone="${z.id}" aria-pressed="${ui.zone === z.id}">${z.label}</button>`).join('')}
   </div>
 
-  <section class="card"><div class="card-head"><h2>Кожа за 30 дней</h2><span class="hint">${ui.zone === 'max' ? 'худшая зона за день' : ZONES.find((z) => z.id === ui.zone).label}</span></div>${trendSVG(ui.zone)}</section>
+  <section class="card"><div class="card-head"><h2>Самочувствие за 30 дней</h2><span class="hint">${ui.zone === 'max' ? 'худшая зона за день' : ZONES.find((z) => z.id === ui.zone).label}</span></div>${trendSVG(ui.zone)}</section>
 
   ${a.ready ? `
   <h3 class="section-title">Следы</h3>
-  ${top.length ? top.map((it) => suspectCard(it, a.items, !active)).join('') : '<div class="card empty">Подозреваемых нет. Кожа ведёт себя одинаково с разными продуктами.</div>'}
+  ${top.length ? top.map((it) => suspectCard(it, a.items, !active)).join('') : '<div class="card empty">Подозреваемых нет. С разными продуктами осмотры одинаковые.</div>'}
   <section class="card">
-    <div class="card-head"><h2>🟢 Зелёная зона</h2><span class="hint">с ними кожа как обычно</span></div>
+    <div class="card-head"><h2>🟢 Зелёная зона</h2><span class="hint">с ними всё как обычно</span></div>
     ${a.green.length ? `<div class="chips">${a.green.slice(0, 18).map((g) => `<span class="chip small green">${itemEmoji(g.key)} ${esc(itemLabel(g.key))}</span>`).join('')}</div>` : '<p class="small muted">Пока мало данных.</p>'}
   </section>` : ''}
 
@@ -522,7 +522,7 @@ function renderRadar() {
   ${closed.length ? `<h3 class="section-title">Закрытые дела</h3>${closed.slice(0, 5).map(caseCard).join('')}` : ''}
 
   <details class="parent-note"><summary><b>Для взрослых: как считает Радар</b></summary>
-    <p style="margin-top:8px">Для каждого замера кожи берутся продукты и улики за 48 часов до него (кроме последнего часа). Затем сравниваются замеры «после продукта» и «без него», а регрессия отделяет продукты, которые просто часто попадали в одни дни. След показывается, только если продукт встретился хотя бы в 3 замерах и 2 разных днях.</p>
+    <p style="margin-top:8px">Для каждого осмотра берутся продукты и улики за 48 часов до него (кроме последнего часа). Затем сравниваются осмотры «после продукта» и «без него», а регрессия отделяет продукты, которые просто часто попадали в одни дни. След показывается, только если продукт встретился хотя бы в 3 осмотрах и 2 разных днях.</p>
     <p style="margin-top:8px">Это подсказки для разговора с аллергологом, а не диагноз. Исключать продукты из питания ребёнка стоит по согласованию с врачом.</p>
   </details>`;
 }
@@ -733,7 +733,7 @@ function renderMore() {
     <div class="rank-line"><span class="big">${rank.emoji}</span><div><h2>${esc(rank.title)}</h2>
       <p class="small muted">${rank.next ? `До звания «${esc(rank.next.title)}» ещё ${rank.toNext} ⭐` : 'Высшее звание агентства!'}</p></div></div>
     <div class="progress"><i style="width:${rank.progress * 100}%"></i></div>
-    <p class="small muted">⭐ 10 за еду и замер кожи, 5 за улику, 2 за стакан воды или напитка без сахара, 20 за супер-тарелку, 5 за игру (до трёх в день), 50 за закрытое дело.</p>
+    <p class="small muted">⭐ 10 за еду и осмотр, 5 за улику, 2 за стакан воды или напитка без сахара, 20 за супер-тарелку, 5 за игру (до трёх в день), 50 за закрытое дело.</p>
   </section>
 
   <section class="card">
@@ -824,7 +824,7 @@ function afterSave(e, isNew, kind) {
     else say(kind === 'skin' ? 'medok' : 'pusya', pick(CHEERS[kind] || CHEERS.meal, e.ts / 1000), 'cheer');
   }
   commit();
-  if (isNew) toast(kind === 'skin' ? 'Замер записан ⭐ +10' : kind === 'factor' ? 'Улика записана ⭐ +5' : 'Записано ⭐ +10', () => { remove(e.id); commit(); });
+  if (isNew) toast(kind === 'skin' ? 'Осмотр записан ⭐ +10' : kind === 'factor' ? 'Улика записана ⭐ +5' : 'Записано ⭐ +10', () => { remove(e.id); commit(); });
   else toast('Изменения сохранены');
 }
 
@@ -914,12 +914,12 @@ function skinSheet(existing) {
   const zoneHTML = (z) => `<div class="zone"><div class="zone-head"><span>${z.emoji} ${z.label}</span><span class="val" id="v-${z.id}">${LEVELS[zones[z.id]]}</span></div>
     <div class="levels">${LEVELS.map((l, i) => `<button type="button" class="level lv${i}" data-sa="lvl" data-z="${z.id}" data-v="${i}" aria-pressed="${zones[z.id] === i}" aria-label="${z.label}: ${l}">${LEVEL_FACES[i]}</button>`).join('')}</div></div>`;
   openSheet({
-    title: existing ? 'Изменить замер' : 'Как кожа?',
+    title: existing ? 'Изменить осмотр' : 'Как ты сейчас?',
     body: `${ZONES.map(zoneHTML).join('')}
       <div class="toggle"><span>Чешется?</span><button type="button" class="switch" role="switch" data-sa="itch" aria-checked="${itch}" aria-label="Чешется"></button></div>
       ${timeField(ts0)}
       <div class="field"><label for="fNote">Заметка</label><textarea class="input" id="fNote" placeholder="Например: покраснение на сгибе локтя">${esc(existing?.note || '')}</textarea></div>`,
-    foot: `${deleteBtn(existing)}<button type="button" class="pill-btn" data-sa="save">Сохранить замер</button>`,
+    foot: `${deleteBtn(existing)}<button type="button" class="pill-btn" data-sa="save">Сохранить осмотр</button>`,
     actions: {
       lvl: (b) => {
         const z = b.dataset.z;
@@ -945,7 +945,7 @@ function factorSheet(existing) {
   let sel = [...(existing?.factors || [])];
   openSheet({
     title: existing ? 'Изменить улику' : 'Что ещё было?',
-    body: `<p class="small muted">Не только еда влияет на кожу. Отметь, что было сегодня необычного.</p>
+    body: `<p class="small muted">Не только еда влияет на самочувствие. Отметь, что было сегодня необычного.</p>
       <div class="chips">${FACTORS.filter((f) => !f.place).map((f) => `<button type="button" class="chip" data-sa="f" data-id="${f.id}" aria-pressed="${sel.includes(f.id)}">${f.emoji} ${esc(f.label)}</button>`).join('')}</div>
       ${timeField(ts0)}
       <div class="field"><label for="fNote">Подробности</label><textarea class="input" id="fNote" placeholder="Например: крем с ромашкой">${esc(existing?.note || '')}</textarea></div>`,
@@ -1099,7 +1099,7 @@ function caseSheet(key) {
   const name = esc(itemLabel(key));
   openSheet({
     title: '📁 Новое дело',
-    body: `<p><b>Проверим ${name}.</b> Несколько дней без него, и каждый день отмечаем кожу. Потом Медок сравнит с днями до дела.</p>
+    body: `<p><b>Проверим ${name}.</b> Несколько дней без него, и каждый день делаем осмотр. Потом Медок сравнит с днями до дела.</p>
       <div class="seg" role="group" aria-label="Сколько дней">${[7, 10, 14].map((d) => `<button type="button" data-sa="days" data-d="${d}" aria-pressed="${d === days}">${d} дней</button>`).join('')}</div>
       <div class="parent-note">Для взрослых: перед тем как убирать продукт из питания, стоит договориться об этом с врачом. Если продукт всё-таки съелся, это не провал: дело продолжается, Медок просто это учтёт.</div>`,
     foot: '<button type="button" class="pill-btn" data-sa="start">Открыть дело</button>',
@@ -1108,7 +1108,7 @@ function caseSheet(key) {
       start: () => {
         state.cases.push({ id: uid(), food: key, start: today(), days, closed: false, u: Date.now() });
         closeSheet();
-        say('medok', `Дело открыто: ${itemLabel(key)}. Отмечаем кожу каждый день, а я веду протокол.`, 'think');
+        say('medok', `Дело открыто: ${itemLabel(key)}. Делаем осмотр каждый день, а я веду протокол.`, 'think');
         commit();
       },
     },
